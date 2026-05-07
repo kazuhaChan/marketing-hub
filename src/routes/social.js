@@ -75,10 +75,11 @@ router.post('/post/:postId', auth, authorize(['Poster']), async (req, res) => {
     // Let's create a mockup for Facebook Graph API
     if (platform === 'Facebook') {
       console.log(`Mocking Facebook post to account ${account.accountId} using token ${account.accessToken}...`);
+      const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
       /* Real implementation would look like:
       const fbRes = await axios.post(`https://graph.facebook.com/v20.0/${account.accountId}/feed`, {
         message: post.content,
-        link: post.product.imageUrl, // Or product link
+        link: `${baseUrl}${post.product.imageUrl}`, // Or product link
         access_token: account.accessToken
       });
       console.log(fbRes.data);

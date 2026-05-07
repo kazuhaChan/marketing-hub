@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
+import { API_URL } from '../config';
 
 const Register = ({ setUser }) => {
   const navigate = useNavigate();
@@ -15,7 +16,7 @@ const Register = ({ setUser }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.post('http://localhost:3000/api/auth/register', formData);
+      await axios.post(`${API_URL}/api/auth/register`, formData);
       // Auto login after register could be here, but let's just redirect to login for simplicity
       navigate('/login');
     } catch (err) {

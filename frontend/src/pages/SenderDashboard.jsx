@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Plus, Users, Package, Send } from 'lucide-react';
+import { API_URL } from '../config';
 
 const SenderDashboard = ({ user }) => {
   const [activeTab, setActiveTab] = useState('products');
@@ -27,8 +28,8 @@ const SenderDashboard = ({ user }) => {
     try {
       const headers = { 'x-auth-token': token };
       const [prodRes, postRes] = await Promise.all([
-        axios.get('http://localhost:3000/api/products', { headers }),
-        axios.get('http://localhost:3000/api/posts', { headers })
+        axios.get(`${API_URL}/api/products`, { headers }),
+        axios.get(`${API_URL}/api/posts`, { headers })
       ]);
       setProducts(prodRes.data);
       setPosts(postRes.data);
@@ -50,7 +51,7 @@ const SenderDashboard = ({ user }) => {
     if (productImage) formData.append('image', productImage);
 
     try {
-      await axios.post('http://localhost:3000/api/products', formData, {
+      await axios.post(`${API_URL}/api/products`, formData, {
         headers: { 'x-auth-token': token, 'Content-Type': 'multipart/form-data' }
       });
       alert('Product created!');
@@ -64,7 +65,7 @@ const SenderDashboard = ({ user }) => {
   const handleCreateGroup = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post('http://localhost:3000/api/groups', { name: groupName }, {
+      const res = await axios.post(`${API_URL}/api/groups`, { name: groupName }, {
         headers: { 'x-auth-token': token }
       });
       alert(`Group created! Invite Code: ${res.data.invitationCode}`);
@@ -80,7 +81,7 @@ const SenderDashboard = ({ user }) => {
     const selectedPlatforms = Object.keys(postPlatforms).filter(key => postPlatforms[key]);
     
     try {
-      await axios.post('http://localhost:3000/api/posts', {
+      await axios.post(`${API_URL}/api/posts`, {
         productId: postProductId,
         groupId: postGroupId, // The sender needs to type the group ID for now (in real app, dropdown)
         content: postContent,

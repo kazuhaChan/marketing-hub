@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { UserPlus, Link as LinkIcon, Share, MessageSquare } from 'lucide-react';
+import { API_URL } from '../config';
 
 const PosterDashboard = ({ user }) => {
   const [activeTab, setActiveTab] = useState('posts');
@@ -19,8 +20,8 @@ const PosterDashboard = ({ user }) => {
     try {
       const headers = { 'x-auth-token': token };
       const [postRes, accRes] = await Promise.all([
-        axios.get('http://localhost:3000/api/posts', { headers }),
-        axios.get('http://localhost:3000/api/social/accounts', { headers })
+        axios.get(`${API_URL}/api/posts`, { headers }),
+        axios.get(`${API_URL}/api/social/accounts`, { headers })
       ]);
       setPosts(postRes.data);
       setLinkedAccounts(accRes.data);
@@ -36,7 +37,7 @@ const PosterDashboard = ({ user }) => {
   const handleJoinGroup = async (e) => {
     e.preventDefault();
     try {
-      await axios.post('http://localhost:3000/api/groups/join', { invitationCode }, {
+      await axios.post(`${API_URL}/api/groups/join`, { invitationCode }, {
         headers: { 'x-auth-token': token }
       });
       alert('Successfully joined group!');
@@ -50,7 +51,7 @@ const PosterDashboard = ({ user }) => {
   const handleLinkAccount = async (e) => {
     e.preventDefault();
     try {
-      await axios.post('http://localhost:3000/api/social/link', {
+      await axios.post(`${API_URL}/api/social/link`, {
         platform,
         accountId,
         accountName,
@@ -68,7 +69,7 @@ const PosterDashboard = ({ user }) => {
 
   const handlePostToPlatform = async (postId, targetPlatform) => {
     try {
-      const res = await axios.post(`http://localhost:3000/api/social/post/${postId}`, { platform: targetPlatform }, {
+      const res = await axios.post(`${API_URL}/api/social/post/${postId}`, { platform: targetPlatform }, {
         headers: { 'x-auth-token': token }
       });
       alert(`Success: ${res.data.msg}`);

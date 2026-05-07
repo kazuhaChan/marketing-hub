@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Share2 } from 'lucide-react';
+import { API_URL } from '../config';
 
 const ProductDetail = () => {
   const { id } = useParams();
@@ -17,7 +18,7 @@ const ProductDetail = () => {
     const fetchProduct = async () => {
       try {
         const token = localStorage.getItem('token');
-        const res = await axios.get(`http://localhost:3000/api/products/${id}`, {
+        const res = await axios.get(`${API_URL}/api/products/${id}`, {
           headers: { 'x-auth-token': token }
         });
         setProduct(res.data);
@@ -43,7 +44,7 @@ const ProductDetail = () => {
       <div className="dashboard-grid">
         <div className="card">
           {product.imageUrl ? (
-            <img src={`http://localhost:3000${product.imageUrl}`} alt={product.name} style={{ width: '100%', borderRadius: 'var(--radius)', marginBottom: '1rem' }} />
+            <img src={`${API_URL}${product.imageUrl}`} alt={product.name} style={{ width: '100%', borderRadius: 'var(--radius)', marginBottom: '1rem' }} />
           ) : (
             <div style={{ width: '100%', height: '300px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1rem' }}>
               <span style={{ color: 'var(--text-muted)' }}>No Image Available</span>

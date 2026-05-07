@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
+import { API_URL } from '../config';
 
 const Home = () => {
   const [products, setProducts] = useState([]);
@@ -10,7 +11,7 @@ const Home = () => {
     const fetchProducts = async () => {
       try {
         const token = localStorage.getItem('token');
-        const res = await axios.get('http://localhost:3000/api/products', {
+        const res = await axios.get(`${API_URL}/api/products`, {
           headers: { 'x-auth-token': token }
         });
         setProducts(res.data);
@@ -38,7 +39,7 @@ const Home = () => {
             <Link to={`/product/${product._id}`} key={product._id} style={{ textDecoration: 'none', color: 'inherit' }}>
               <div className="card product-card" style={{ padding: 0 }}>
                 {product.imageUrl ? (
-                  <img src={`http://localhost:3000${product.imageUrl}`} alt={product.name} className="product-image" />
+                  <img src={`${API_URL}${product.imageUrl}`} alt={product.name} className="product-image" />
                 ) : (
                   <div className="product-image" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <span style={{ color: 'var(--text-muted)' }}>No Image</span>
