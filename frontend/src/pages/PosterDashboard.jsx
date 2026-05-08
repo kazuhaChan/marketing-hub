@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import { UserPlus, Link as LinkIcon, Share, MessageSquare } from 'lucide-react';
 import { API_URL } from '../config';
 
 const PosterDashboard = ({ user }) => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState('posts');
   const [invitationCode, setInvitationCode] = useState('');
   const [posts, setPosts] = useState([]);
@@ -32,7 +34,37 @@ const PosterDashboard = ({ user }) => {
 
   useEffect(() => {
     fetchData();
+
+    // Check for Facebook OAuth callback
+    const code = searchParams.get('code');
+    const state = searchParams.get('state');
+    
+    if (code && state === 'facebook') {
+      handleOAuthCallback(code);
+      // Clean up URL
+      searchParams.delete('code');
+      searchParams.delete('state');
+      setSearchParams(searchParams);
+      setActiveTab('social');
+    }
   }, []);
+
+  const handleOAuthCallback = async (code) => {
+    try {
+      const redirectUri = window.location.origin + window.location.pathname;
+      await axios.post(`${API_URL}/api/social/link`, {
+        platform: 'Facebook',
+        code,
+        redirectUri
+      }, {
+        headers: { 'x-auth-token': token }
+      });
+      alert('Facebook account successfully linked!');
+      fetchData();
+    } catch (err) {
+      alert(err.response?.data?.msg || 'Error linking Facebook account');
+    }
+  };
 
   const handleJoinGroup = async (e) => {
     e.preventDefault();
@@ -48,22 +80,19 @@ const PosterDashboard = ({ user }) => {
     }
   };
 
-  const handleLinkAccount = async (e) => {
+  const handleLinkAccount = (e) => {
     e.preventDefault();
-    try {
-      await axios.post(`${API_URL}/api/social/link`, {
-        platform,
-        accountId,
-        accountName,
-        accessToken: 'mock_token_' + Date.now()
-      }, {
-        headers: { 'x-auth-token': token }
-      });
-      alert('Account linked successfully (Mock)');
-      setAccountId(''); setAccountName('');
-      fetchData();
-    } catch (err) {
-      alert('Error linking account');
+    if (platform === 'Facebook') {
+      const appId = import.meta.env.VITE_FB_APP_ID;
+      if (!appId) {
+        alert('Facebook App ID is not configured. Please add VITE_FB_APP_ID to .env');
+        return;
+      }
+      const redirectUri = window.location.origin + window.location.pathname;
+      const oauthUrl = `https://www.facebook.com/v20.0/dialog/oauth?client_id=${appId}&redirect_uri=${redirectUri}&scope=pages_manage_posts,pages_read_engagement,pages_show_list&state=facebook`;
+      window.location.href = oauthUrl;
+    } else {
+      alert(`${platform} linking is not yet implemented. Please use Facebook.`);
     }
   };
 
@@ -117,20 +146,14 @@ const PosterDashboard = ({ user }) => {
               <div className="form-group">
                 <label>Platform</label>
                 <select className="input" value={platform} onChange={e => setPlatform(e.target.value)}>
-                  <option value="Facebook">Facebook</option>
-                  <option value="Zalo">Zalo</option>
-                  <option value="TikTok">TikTok</option>
+                  <option value="Facebook">Facebook (Real)</option>
+                  <option value="Zalo" disabled>Zalo (Coming soon)</option>
+                  <option value="TikTok" disabled>TikTok (Coming soon)</option>
                 </select>
               </div>
-              <div className="form-group">
-                <label>Account ID / Phone</label>
-                <input type="text" className="input" required value={accountId} onChange={e => setAccountId(e.target.value)} />
-              </div>
-              <div className="form-group">
-                <label>Account Name (Display)</label>
-                <input type="text" className="input" required value={accountName} onChange={e => setAccountName(e.target.value)} />
-              </div>
-              <button type="submit" className="btn btn-primary">Link Account (OAuth Mock)</button>
+              <button type="submit" className="btn btn-primary" style={{ backgroundColor: '#1877f2', display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
+                Connect Facebook
+              </button>
             </form>
           )}
 

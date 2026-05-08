@@ -7,40 +7,69 @@ const authorize = require('../middleware/authorize');
 const axios = require('axios');
 
 // @route   POST /api/social/link
-// @desc    Mock endpoint to link a social account
+// @desc    Link a social account (OAuth callback)
 router.post('/link', auth, authorize(['Poster']), async (req, res) => {
   try {
-    const { platform, accountId, accountName, accessToken, refreshToken } = req.body;
+    const { platform, code, redirectUri } = req.body;
 
-    // Validate platform
-    if (!['Facebook', 'Zalo', 'TikTok'].includes(platform)) {
-      return res.status(400).json({ msg: 'Invalid platform' });
+    if (platform !== 'Facebook') {
+      return res.status(400).json({ msg: 'Currently only Facebook is supported for real linking' });
     }
 
-    let account = await SocialAccount.findOne({ user: req.user.id, platform, accountId });
+    if (!code || !redirectUri) {
+      return res.status(400).json({ msg: 'Missing OAuth code or redirectUri' });
+    }
+
+    // 1. Exchange code for access token
+    const tokenRes = await axios.get('https://graph.facebook.com/v20.0/oauth/access_token', {
+      params: {
+        client_id: process.env.FB_APP_ID,
+        client_secret: process.env.FB_APP_SECRET,
+        redirect_uri: redirectUri,
+        code: code
+      }
+    });
+    
+    const userAccessToken = tokenRes.data.access_token;
+
+    // 2. Get the user's Pages
+    const pagesRes = await axios.get('https://graph.facebook.com/v20.0/me/accounts', {
+      params: { access_token: userAccessToken }
+    });
+
+    const pages = pagesRes.data.data;
+    if (!pages || pages.length === 0) {
+      return res.status(400).json({ msg: 'No Facebook Pages found for this user. You must own a Facebook Page.' });
+    }
+
+    // For simplicity, we link the first Page. 
+    // In a more complex app, you'd let them select which page.
+    const page = pages[0];
+    const pageId = page.id;
+    const pageName = page.name;
+    const pageAccessToken = page.access_token;
+
+    // 3. Save to database
+    let account = await SocialAccount.findOne({ user: req.user.id, platform, accountId: pageId });
     if (account) {
-      // Update existing
-      account.accessToken = accessToken;
-      account.refreshToken = refreshToken;
-      account.accountName = accountName;
+      account.accessToken = pageAccessToken;
+      account.accountName = pageName;
       await account.save();
     } else {
-      // Create new
       account = new SocialAccount({
         user: req.user.id,
         platform,
-        accountId,
-        accountName,
-        accessToken,
-        refreshToken
+        accountId: pageId,
+        accountName: pageName,
+        accessToken: pageAccessToken
       });
       await account.save();
     }
 
     res.json(account);
   } catch (err) {
-    console.error(err.message);
-    res.status(500).send('Server Error');
+    console.error('OAuth Error:', err.response?.data || err.message);
+    res.status(500).json({ msg: 'Failed to link account via Facebook API' });
   }
 });
 
@@ -71,27 +100,31 @@ router.post('/post/:postId', auth, authorize(['Poster']), async (req, res) => {
       return res.status(400).json({ msg: `No linked account for ${platform}` });
     }
 
-    // This is where actual API integration happens.
-    // Let's create a mockup for Facebook Graph API
+    // Real Facebook Integration
     if (platform === 'Facebook') {
-      console.log(`Mocking Facebook post to account ${account.accountId} using token ${account.accessToken}...`);
-      const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
-      /* Real implementation would look like:
-      const fbRes = await axios.post(`https://graph.facebook.com/v20.0/${account.accountId}/feed`, {
-        message: post.content,
-        link: `${baseUrl}${post.product.imageUrl}`, // Or product link
-        access_token: account.accessToken
-      });
-      console.log(fbRes.data);
-      */
+      const baseUrl = process.env.BASE_URL || 'http://mkt.kaiyovietnam.vn';
+      const linkToShare = post.product?.imageUrl ? `${baseUrl}${post.product.imageUrl}` : baseUrl;
       
-      // Update post status if it was pending
-      if (post.status === 'Pending') {
-        post.status = 'Posted';
-        await post.save();
-      }
+      try {
+        const fbRes = await axios.post(`https://graph.facebook.com/v20.0/${account.accountId}/feed`, {
+          message: post.content,
+          link: linkToShare,
+          access_token: account.accessToken
+        });
+        
+        console.log('Facebook Post Success:', fbRes.data);
+        
+        // Update post status if it was pending
+        if (post.status === 'Pending') {
+          post.status = 'Posted';
+          await post.save();
+        }
 
-      return res.json({ msg: `Successfully posted to ${platform}`, accountName: account.accountName });
+        return res.json({ msg: `Successfully posted to ${platform}`, accountName: account.accountName, postId: fbRes.data.id });
+      } catch (fbErr) {
+        console.error('Facebook API Error:', fbErr.response?.data || fbErr.message);
+        return res.status(500).json({ msg: 'Facebook API failed to publish post' });
+      }
     } else {
       // Other platforms mockup
       return res.json({ msg: `Mocked post to ${platform}`, accountName: account.accountName });
@@ -99,7 +132,6 @@ router.post('/post/:postId', auth, authorize(['Poster']), async (req, res) => {
 
   } catch (err) {
     console.error(err.message);
-    // Real implementation should catch axios errors and return meaningful messages
     res.status(500).send('Server Error during posting');
   }
 });
