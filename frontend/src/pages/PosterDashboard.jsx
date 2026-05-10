@@ -51,12 +51,10 @@ const PosterDashboard = ({ user }) => {
 
   const handleOAuthCallback = async (code) => {
     try {
-      // Normalize redirectUri: remove trailing slash and ensure consistency
-      const origin = window.location.origin;
-      const path = window.location.pathname.replace(/\/$/, "");
-      const redirectUri = origin + path;
+      // Hardcode the redirectUri to match exactly what is registered in Facebook
+      const redirectUri = 'https://mkt.kaiyovietnam.vn/poster-dashboard';
       
-      console.log('Sending callback with redirectUri:', redirectUri);
+      console.error('Sending callback with redirectUri:', redirectUri);
       
       await axios.post(`${API_URL}/api/social/link`, {
         platform: 'Facebook',
@@ -94,9 +92,8 @@ const PosterDashboard = ({ user }) => {
         alert('Facebook App ID is not configured. Please add VITE_FB_APP_ID to .env');
         return;
       }
-      const origin = window.location.origin;
-      const path = window.location.pathname.replace(/\/$/, "");
-      const redirectUri = origin + path;
+      // Hardcode the redirectUri to match exactly what is registered in Facebook
+      const redirectUri = 'https://mkt.kaiyovietnam.vn/poster-dashboard';
       
       const oauthUrl = `https://www.facebook.com/v20.0/dialog/oauth?client_id=${appId}&redirect_uri=${redirectUri}&scope=pages_manage_posts,pages_read_engagement,pages_show_list&state=facebook`;
       window.location.href = oauthUrl;
