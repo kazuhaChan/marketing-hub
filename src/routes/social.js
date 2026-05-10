@@ -108,14 +108,25 @@ router.post('/post/:postId', auth, authorize(['Poster']), async (req, res) => {
     // Real Facebook Integration
     if (platform === 'Facebook') {
       const baseUrl = process.env.BASE_URL || 'http://mkt.kaiyovietnam.vn';
-      const linkToShare = post.product?.imageUrl ? `${baseUrl}${post.product.imageUrl}` : baseUrl;
+      const hasImage = post.product?.imageUrl;
+      const imageUrl = `${baseUrl}${post.product?.imageUrl}`;
       
       try {
-        const fbRes = await axios.post(`https://graph.facebook.com/v20.0/${account.accountId}/feed`, {
-          message: post.content,
-          link: linkToShare,
-          access_token: account.accessToken
-        });
+        let fbRes;
+        if (hasImage) {
+          // Post as a PHOTO
+          fbRes = await axios.post(`https://graph.facebook.com/v20.0/${account.accountId}/photos`, {
+            caption: post.content,
+            url: imageUrl,
+            access_token: account.accessToken
+          });
+        } else {
+          // Fallback to regular post if no image
+          fbRes = await axios.post(`https://graph.facebook.com/v20.0/${account.accountId}/feed`, {
+            message: post.content,
+            access_token: account.accessToken
+          });
+        }
         
         console.log('Facebook Post Success:', fbRes.data);
         
