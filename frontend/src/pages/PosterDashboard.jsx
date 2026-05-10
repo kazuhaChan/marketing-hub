@@ -51,7 +51,13 @@ const PosterDashboard = ({ user }) => {
 
   const handleOAuthCallback = async (code) => {
     try {
-      const redirectUri = window.location.origin + window.location.pathname;
+      // Normalize redirectUri: remove trailing slash and ensure consistency
+      const origin = window.location.origin;
+      const path = window.location.pathname.replace(/\/$/, "");
+      const redirectUri = origin + path;
+      
+      console.log('Sending callback with redirectUri:', redirectUri);
+      
       await axios.post(`${API_URL}/api/social/link`, {
         platform: 'Facebook',
         code,
@@ -88,7 +94,10 @@ const PosterDashboard = ({ user }) => {
         alert('Facebook App ID is not configured. Please add VITE_FB_APP_ID to .env');
         return;
       }
-      const redirectUri = window.location.origin + window.location.pathname;
+      const origin = window.location.origin;
+      const path = window.location.pathname.replace(/\/$/, "");
+      const redirectUri = origin + path;
+      
       const oauthUrl = `https://www.facebook.com/v20.0/dialog/oauth?client_id=${appId}&redirect_uri=${redirectUri}&scope=pages_manage_posts,pages_read_engagement,pages_show_list&state=facebook`;
       window.location.href = oauthUrl;
     } else {
