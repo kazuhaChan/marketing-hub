@@ -25,6 +25,17 @@ router.post('/', auth, authorize(['Sender']), async (req, res) => {
   }
 });
 
+// Get My Groups
+router.get('/', auth, authorize(['Sender']), async (req, res) => {
+  try {
+    const groups = await Group.find({ owner: req.user.id });
+    res.json(groups);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server Error');
+  }
+});
+
 // Join Group
 router.post('/join', auth, authorize(['Poster']), async (req, res) => {
   try {

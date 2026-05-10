@@ -27,13 +27,14 @@ const SenderDashboard = ({ user }) => {
   const fetchData = async () => {
     try {
       const headers = { 'x-auth-token': token };
-      const [prodRes, postRes] = await Promise.all([
+      const [prodRes, postRes, groupRes] = await Promise.all([
         axios.get(`${API_URL}/api/products`, { headers }),
-        axios.get(`${API_URL}/api/posts`, { headers })
+        axios.get(`${API_URL}/api/posts`, { headers }),
+        axios.get(`${API_URL}/api/groups`, { headers })
       ]);
       setProducts(prodRes.data);
       setPosts(postRes.data);
-      // Assuming a get groups endpoint exists or similar, we might need to fetch groups but for now let's focus on creating.
+      setGroups(groupRes.data);
     } catch (err) {
       console.error(err);
     }
@@ -149,12 +150,22 @@ const SenderDashboard = ({ user }) => {
           {activeTab === 'posts' && (
             <form onSubmit={handleCreatePost}>
                <div className="form-group">
-                <label>Product ID</label>
-                <input type="text" className="input" required value={postProductId} onChange={e => setPostProductId(e.target.value)} placeholder="Paste product ID here" />
+                <label>Select Product</label>
+                <select className="input" required value={postProductId} onChange={e => setPostProductId(e.target.value)}>
+                  <option value="">-- Choose a Product --</option>
+                  {products.map(p => (
+                    <option key={p._id} value={p._id}>{p.name}</option>
+                  ))}
+                </select>
               </div>
               <div className="form-group">
-                <label>Group ID</label>
-                <input type="text" className="input" required value={postGroupId} onChange={e => setPostGroupId(e.target.value)} placeholder="Paste group ID here" />
+                <label>Select Group</label>
+                <select className="input" required value={postGroupId} onChange={e => setPostGroupId(e.target.value)}>
+                  <option value="">-- Choose a Group --</option>
+                  {groups.map(g => (
+                    <option key={g._id} value={g._id}>{g.name}</option>
+                  ))}
+                </select>
               </div>
               <div className="form-group">
                 <label>Caption / Content</label>
@@ -210,9 +221,15 @@ const SenderDashboard = ({ user }) => {
             </div>
           ))}
 
-          {activeTab === 'groups' && (
-            <p style={{ color: 'var(--text-muted)' }}>Groups listing not implemented in this minimal view. But they are created!</p>
-          )}
+          {activeTab === 'groups' && groups.map(g => (
+             <div key={g._id} className="list-item">
+               <div>
+                 <p style={{ fontWeight: 600 }}>{g.name}</p>
+                 <p style={{ fontSize: '0.8rem', color: 'var(--primary)' }}>Code: {g.invitationCode}</p>
+               </div>
+               <span className="badge badge-success">{g.members.length} Members</span>
+             </div>
+           ))}
 
         </div>
       </div>
