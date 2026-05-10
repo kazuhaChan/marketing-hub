@@ -46,31 +46,32 @@ router.post('/link', auth, authorize(['Poster']), async (req, res) => {
       return res.status(400).json({ msg: 'No Facebook Pages found for this user. You must own a Facebook Page.' });
     }
 
-    // For simplicity, we link the first Page. 
-    // In a more complex app, you'd let them select which page.
-    const page = pages[0];
-    const pageId = page.id;
-    const pageName = page.name;
-    const pageAccessToken = page.access_token;
+    // 3. Save ALL found Pages to database
+    const linkedAccounts = [];
+    for (const page of pages) {
+      const pageId = page.id;
+      const pageName = page.name;
+      const pageAccessToken = page.access_token;
 
-    // 3. Save to database
-    let account = await SocialAccount.findOne({ user: req.user.id, platform, accountId: pageId });
-    if (account) {
-      account.accessToken = pageAccessToken;
-      account.accountName = pageName;
-      await account.save();
-    } else {
-      account = new SocialAccount({
-        user: req.user.id,
-        platform,
-        accountId: pageId,
-        accountName: pageName,
-        accessToken: pageAccessToken
-      });
-      await account.save();
+      let account = await SocialAccount.findOne({ user: req.user.id, platform, accountId: pageId });
+      if (account) {
+        account.accessToken = pageAccessToken;
+        account.accountName = pageName;
+        await account.save();
+      } else {
+        account = new SocialAccount({
+          user: req.user.id,
+          platform,
+          accountId: pageId,
+          accountName: pageName,
+          accessToken: pageAccessToken
+        });
+        await account.save();
+      }
+      linkedAccounts.push(account);
     }
 
-    res.json(account);
+    res.json(linkedAccounts);
   } catch (err) {
     const fbError = err.response?.data?.error?.message || err.message;
     console.error('OAuth Error:', err.response?.data || err.message);
@@ -94,15 +95,21 @@ router.get('/accounts', auth, authorize(['Poster']), async (req, res) => {
 // @desc    Manually post a specific post to linked platform
 router.post('/post/:postId', auth, authorize(['Poster']), async (req, res) => {
   try {
-    const { platform } = req.body;
+    const { platform, accountId } = req.body;
     const post = await Post.findById(req.params.postId).populate('product');
     if (!post) {
       return res.status(404).json({ msg: 'Post not found' });
     }
 
-    const account = await SocialAccount.findOne({ user: req.user.id, platform });
+    let account;
+    if (accountId) {
+      account = await SocialAccount.findOne({ _id: accountId, user: req.user.id });
+    } else {
+      account = await SocialAccount.findOne({ user: req.user.id, platform });
+    }
+
     if (!account) {
-      return res.status(400).json({ msg: `No linked account for ${platform}` });
+      return res.status(400).json({ msg: `No linked account found for ${platform}` });
     }
 
     // Real Facebook Integration

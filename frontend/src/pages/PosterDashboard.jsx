@@ -16,6 +16,7 @@ const PosterDashboard = ({ user }) => {
   const [platform, setPlatform] = useState('Facebook');
   const [accountId, setAccountId] = useState('');
   const [accountName, setAccountName] = useState('');
+  const [selectedAccounts, setSelectedAccounts] = useState({}); // { postId_platform: accountId }
 
   const token = localStorage.getItem('token');
 
@@ -107,7 +108,12 @@ const PosterDashboard = ({ user }) => {
 
   const handlePostToPlatform = async (postId, targetPlatform) => {
     try {
-      const res = await axios.post(`${API_URL}/api/social/post/${postId}`, { platform: targetPlatform }, {
+      const accountId = selectedAccounts[`${postId}_${targetPlatform}`];
+      
+      const res = await axios.post(`${API_URL}/api/social/post/${postId}`, { 
+        platform: targetPlatform,
+        accountId: accountId 
+      }, {
         headers: { 'x-auth-token': token }
       });
       alert(`Success: ${res.data.msg}`);
@@ -206,12 +212,30 @@ const PosterDashboard = ({ user }) => {
               
               <div style={{ borderTop: '1px solid var(--border)', paddingTop: '1rem' }}>
                 <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Target Platforms: {p.platforms.join(', ')}</p>
-                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                  {p.platforms.map(plat => (
-                    <button key={plat} onClick={() => handlePostToPlatform(p._id, plat)} className="btn btn-secondary" style={{ fontSize: '0.8rem', padding: '0.4rem 0.8rem' }}>
-                      <Share size={14} /> Post to {plat}
-                    </button>
-                  ))}
+                <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                  {p.platforms.map(plat => {
+                    const platformAccounts = linkedAccounts.filter(acc => acc.platform === plat);
+                    return (
+                      <div key={plat} style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                        {platformAccounts.length > 1 && (
+                          <select 
+                            className="input" 
+                            style={{ fontSize: '0.75rem', padding: '0.2rem' }}
+                            value={selectedAccounts[`${p._id}_${plat}`] || ''}
+                            onChange={(e) => setSelectedAccounts({...selectedAccounts, [`${p._id}_${plat}`]: e.target.value})}
+                          >
+                            <option value="">-- Choose Account --</option>
+                            {platformAccounts.map(acc => (
+                              <option key={acc._id} value={acc._id}>{acc.accountName}</option>
+                            ))}
+                          </select>
+                        )}
+                        <button onClick={() => handlePostToPlatform(p._id, plat)} className="btn btn-secondary" style={{ fontSize: '0.8rem', padding: '0.4rem 0.8rem' }}>
+                          <Share size={14} /> Post to {plat}
+                        </button>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </div>
