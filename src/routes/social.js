@@ -21,6 +21,10 @@ router.post('/link', auth, authorize(['Poster']), async (req, res) => {
     }
 
     // 1. Exchange code for access token
+    console.log('Exchanging code for token...');
+    console.log('App ID:', process.env.FB_APP_ID);
+    console.log('Redirect URI:', redirectUri);
+
     const tokenRes = await axios.get('https://graph.facebook.com/v20.0/oauth/access_token', {
       params: {
         client_id: process.env.FB_APP_ID,
