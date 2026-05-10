@@ -10,6 +10,7 @@ const PosterDashboard = ({ user }) => {
   const [invitationCode, setInvitationCode] = useState('');
   const [posts, setPosts] = useState([]);
   const [linkedAccounts, setLinkedAccounts] = useState([]);
+  const [joinedGroups, setJoinedGroups] = useState([]);
 
   // Mock social link state
   const [platform, setPlatform] = useState('Facebook');
@@ -21,12 +22,14 @@ const PosterDashboard = ({ user }) => {
   const fetchData = async () => {
     try {
       const headers = { 'x-auth-token': token };
-      const [postRes, accRes] = await Promise.all([
+      const [postRes, accRes, groupRes] = await Promise.all([
         axios.get(`${API_URL}/api/posts`, { headers }),
-        axios.get(`${API_URL}/api/social/accounts`, { headers })
+        axios.get(`${API_URL}/api/social/accounts`, { headers }),
+        axios.get(`${API_URL}/api/groups/my-groups`, { headers }) // I'll add this endpoint
       ]);
       setPosts(postRes.data);
       setLinkedAccounts(accRes.data);
+      setJoinedGroups(groupRes.data);
     } catch (err) {
       console.error(err);
     }
@@ -132,16 +135,26 @@ const PosterDashboard = ({ user }) => {
           </h2>
 
           {activeTab === 'groups' && (
-            <form onSubmit={handleJoinGroup}>
-              <div className="form-group">
-                <label>Invitation Code</label>
-                <input type="text" className="input" required value={invitationCode} onChange={e => setInvitationCode(e.target.value)} placeholder="e.g. A1B2C3D4" />
-              </div>
-              <p style={{ color: 'var(--text-muted)', marginBottom: '1rem', fontSize: '0.9rem' }}>
-                Ask your Sender for an invitation code to join their group and access their content.
-              </p>
-              <button type="submit" className="btn btn-primary">Join Group</button>
-            </form>
+            <div>
+              <form onSubmit={handleJoinGroup} style={{ marginBottom: '2rem' }}>
+                <div className="form-group">
+                  <label>Invitation Code</label>
+                  <input type="text" className="input" required value={invitationCode} onChange={e => setInvitationCode(e.target.value)} placeholder="e.g. A1B2C3D4" />
+                </div>
+                <button type="submit" className="btn btn-primary">Join Group</button>
+              </form>
+
+              <h3 style={{ marginBottom: '1rem', fontSize: '1rem' }}>Groups You've Joined</h3>
+              {joinedGroups.length === 0 ? (
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>You haven't joined any groups yet.</p>
+              ) : (
+                joinedGroups.map(g => (
+                  <div key={g._id} className="list-item" style={{ background: 'rgba(255,255,255,0.05)', padding: '0.8rem', borderRadius: '8px', marginBottom: '0.5rem' }}>
+                    <span style={{ fontWeight: 600 }}>{g.name}</span>
+                  </div>
+                ))
+              )}
+            </div>
           )}
 
           {activeTab === 'social' && (

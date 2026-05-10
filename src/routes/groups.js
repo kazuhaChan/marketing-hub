@@ -47,7 +47,7 @@ router.post('/join', auth, authorize(['Poster']), async (req, res) => {
       return res.status(404).json({ msg: 'Group not found' });
     }
     
-    if (group.members.includes(req.user.id)) {
+    if (group.members.some(m => m.toString() === req.user.id)) {
       return res.status(400).json({ msg: 'Already a member' });
     }
     
@@ -55,6 +55,17 @@ router.post('/join', auth, authorize(['Poster']), async (req, res) => {
     await group.save();
     
     res.json({ msg: 'Successfully joined group' });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server Error');
+  }
+});
+
+// Get Groups I've Joined (Poster)
+router.get('/my-groups', auth, authorize(['Poster']), async (req, res) => {
+  try {
+    const groups = await Group.find({ members: req.user.id });
+    res.json(groups);
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server Error');

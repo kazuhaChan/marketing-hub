@@ -56,6 +56,8 @@ router.get('/', auth, async (req, res) => {
       // Poster role: get posts from groups they are in
       const groups = await Group.find({ members: req.user.id }).select('_id');
       const groupIds = groups.map(g => g._id);
+      
+      console.log(`Poster ${req.user.id} is in groups: ${groupIds}`);
 
       const posts = await Post.find({ group: { $in: groupIds } })
         .populate('product', ['name', 'description', 'imageUrl'])
