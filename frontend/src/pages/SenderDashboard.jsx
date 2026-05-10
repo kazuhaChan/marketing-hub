@@ -22,6 +22,9 @@ const SenderDashboard = ({ user }) => {
   const [postScheduledAt, setPostScheduledAt] = useState('');
   const [postPlatforms, setPostPlatforms] = useState({ Facebook: true, Zalo: false, TikTok: false });
 
+  const [editingProductId, setEditingProductId] = useState(null);
+  const [productIsAvailable, setProductIsAvailable] = useState(true);
+
   const token = localStorage.getItem('token');
 
   const fetchData = async () => {
@@ -49,17 +52,47 @@ const SenderDashboard = ({ user }) => {
     const formData = new FormData();
     formData.append('name', productName);
     formData.append('description', productDesc);
+    formData.append('isAvailable', productIsAvailable);
     if (productImage) formData.append('image', productImage);
 
     try {
-      await axios.post(`${API_URL}/api/products`, formData, {
-        headers: { 'x-auth-token': token, 'Content-Type': 'multipart/form-data' }
-      });
-      alert('Product created!');
-      setProductName(''); setProductDesc(''); setProductImage(null);
+      if (editingProductId) {
+        await axios.put(`${API_URL}/api/products/${editingProductId}`, formData, {
+          headers: { 'x-auth-token': token, 'Content-Type': 'multipart/form-data' }
+        });
+        alert('Product updated!');
+      } else {
+        await axios.post(`${API_URL}/api/products`, formData, {
+          headers: { 'x-auth-token': token, 'Content-Type': 'multipart/form-data' }
+        });
+        alert('Product created!');
+      }
+      setProductName(''); setProductDesc(''); setProductImage(null); 
+      setEditingProductId(null); setProductIsAvailable(true);
       fetchData();
     } catch (err) {
-      alert('Error creating product');
+      alert('Error saving product');
+    }
+  };
+
+  const handleEditClick = (p) => {
+    setEditingProductId(p._id);
+    setProductName(p.name);
+    setProductDesc(p.description);
+    setProductIsAvailable(p.isAvailable);
+    setActiveTab('products');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleDeleteProduct = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this product?')) return;
+    try {
+      await axios.delete(`${API_URL}/api/products/${id}`, {
+        headers: { 'x-auth-token': token }
+      });
+      fetchData();
+    } catch (err) {
+      alert('Error deleting product');
     }
   };
 
@@ -113,7 +146,7 @@ const SenderDashboard = ({ user }) => {
       <div className="dashboard-grid">
         <div className="card">
           <h2 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Plus size={20} /> Create New {activeTab.slice(0, -1)}
+            {editingProductId ? 'Edit Product' : `Create New ${activeTab.slice(0, -1)}`}
           </h2>
 
           {activeTab === 'products' && (
@@ -127,10 +160,19 @@ const SenderDashboard = ({ user }) => {
                 <textarea className="input" rows="4" required value={productDesc} onChange={e => setProductDesc(e.target.value)}></textarea>
               </div>
               <div className="form-group">
-                <label>Image</label>
+                <label>Image (Leave empty to keep current)</label>
                 <input type="file" className="input" onChange={e => setProductImage(e.target.files[0])} />
               </div>
-              <button type="submit" className="btn btn-primary">Create Product</button>
+              <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <input type="checkbox" checked={productIsAvailable} onChange={e => setProductIsAvailable(e.target.checked)} id="isAvailable" />
+                <label htmlFor="isAvailable" style={{ marginBottom: 0 }}>Active / Available for Posters</label>
+              </div>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <button type="submit" className="btn btn-primary">{editingProductId ? 'Update Product' : 'Create Product'}</button>
+                {editingProductId && (
+                  <button type="button" className="btn btn-secondary" onClick={() => { setEditingProductId(null); setProductName(''); setProductDesc(''); }}>Cancel</button>
+                )}
+              </div>
             </form>
           )}
 
@@ -198,14 +240,18 @@ const SenderDashboard = ({ user }) => {
           <h2 style={{ marginBottom: '1.5rem' }}>Your {activeTab}</h2>
           
           {activeTab === 'products' && products.map(p => (
-            <div key={p._id} className="list-item">
-              <div>
+            <div key={p._id} className="list-item" style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', marginBottom: '0.5rem' }}>
                 <p style={{ fontWeight: 600 }}>{p.name}</p>
-                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>ID: {p._id}</p>
+                <span className={`badge ${p.isAvailable ? 'badge-success' : 'badge-pending'}`}>
+                  {p.isAvailable ? 'Active' : 'Inactive'}
+                </span>
               </div>
-              <span className={`badge ${p.isAvailable ? 'badge-success' : 'badge-pending'}`}>
-                {p.isAvailable ? 'Active' : 'Inactive'}
-              </span>
+              <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.8rem' }}>ID: {p._id}</p>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <button onClick={() => handleEditClick(p)} className="btn btn-secondary" style={{ fontSize: '0.75rem', padding: '0.3rem 0.6rem' }}>Edit</button>
+                <button onClick={() => handleDeleteProduct(p._id)} className="btn btn-secondary" style={{ fontSize: '0.75rem', padding: '0.3rem 0.6rem', color: '#ff4d4f' }}>Delete</button>
+              </div>
             </div>
           ))}
 
