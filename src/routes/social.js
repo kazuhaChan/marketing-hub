@@ -68,8 +68,9 @@ router.post('/link', auth, authorize(['Poster']), async (req, res) => {
 
     res.json(account);
   } catch (err) {
+    const fbError = err.response?.data?.error?.message || err.message;
     console.error('OAuth Error:', err.response?.data || err.message);
-    res.status(500).json({ msg: 'Failed to link account via Facebook API' });
+    res.status(500).json({ msg: `Facebook API Error: ${fbError}` });
   }
 });
 
