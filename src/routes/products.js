@@ -3,6 +3,8 @@ const router = express.Router();
 const multer = require('multer');
 const path = require('path');
 const Product = require('../models/Product');
+const Group = require('../models/Group');
+const Post = require('../models/Post');
 const auth = require('../middleware/auth');
 const authorize = require('../middleware/authorize');
 const fs = require('fs');
@@ -69,12 +71,21 @@ router.post('/', auth, authorize(['Sender']), upload.single('image'), async (req
 // @desc    Get all products (For Sender, get own; For Poster, get all available in groups they joined, but for now we'll fetch all or handle logic in groups)
 router.get('/', auth, async (req, res) => {
   try {
-    // If sender, return only their products. If poster, return products from groups they are in (for simplicity, we might just return all active products or let the user search)
     let products = [];
     if (req.user.role === 'Sender') {
       products = await Product.find({ owner: req.user.id }).sort({ createdAt: -1 });
     } else {
-      products = await Product.find({ isAvailable: true }).sort({ createdAt: -1 });
+      // Poster role: only see products that have been posted to their groups
+      const userGroups = await Group.find({ members: req.user.id }).select('_id');
+      const groupIds = userGroups.map(g => g._id);
+
+      const postsInMyGroups = await Post.find({ group: { $in: groupIds } }).select('product');
+      const productIds = [...new Set(postsInMyGroups.map(p => p.product.toString()))];
+
+      products = await Product.find({ 
+        _id: { $in: productIds },
+        isAvailable: true 
+      }).sort({ createdAt: -1 });
     }
     res.json(products);
   } catch (err) {
