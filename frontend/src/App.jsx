@@ -3,6 +3,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Home from './pages/Home';
 import ProductDetail from './pages/ProductDetail';
+import Profile from './pages/Profile';
 import SenderDashboard from './pages/SenderDashboard';
 import PosterDashboard from './pages/PosterDashboard';
 import Header from './components/Header';
@@ -43,6 +44,7 @@ function App() {
         {/* Protected Routes */}
         <Route path="/" element={user ? <Layout><Home /></Layout> : <Navigate to="/login" />} />
         <Route path="/product/:id" element={user ? <Layout><ProductDetail /></Layout> : <Navigate to="/login" />} />
+        <Route path="/profile" element={user ? <Layout><Profile user={user} /></Layout> : <Navigate to="/login" />} />
         
         {/* Role based Dashboards */}
         <Route path="/sender-dashboard" element={

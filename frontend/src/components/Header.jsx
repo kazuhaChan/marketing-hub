@@ -25,9 +25,9 @@ const Header = ({ user, onLogout }) => {
           </Link>
         )}
         
-        <div className="user-avatar" title={user?.username}>
+        <Link to="/profile" className="user-avatar" title="View Profile">
           {user?.username?.charAt(0).toUpperCase()}
-        </div>
+        </Link>
         
         <button onClick={() => { onLogout(); navigate('/login'); }} className="btn btn-secondary" title="Logout">
           <LogOut size={18} />
