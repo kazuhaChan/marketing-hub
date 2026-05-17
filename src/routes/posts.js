@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
 const Post = require('../models/Post');
-const Group = require('../models/Group');
 const Product = require('../models/Product');
 const auth = require('../middleware/auth');
 const authorize = require('../middleware/authorize');
