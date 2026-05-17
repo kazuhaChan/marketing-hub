@@ -5,6 +5,7 @@ import ProductDetail from './pages/ProductDetail';
 import Profile from './pages/Profile';
 import SenderDashboard from './pages/SenderDashboard';
 import PosterDashboard from './pages/PosterDashboard';
+import AdminDashboard from './pages/AdminDashboard';
 import Header from './components/Header';
 import { useState, useEffect } from 'react';
 
@@ -51,6 +52,10 @@ function App() {
         
         <Route path="/poster-dashboard" element={
           user && user.role === 'Poster' ? <Layout><PosterDashboard user={user} /></Layout> : <Navigate to="/" />
+        } />
+        
+        <Route path="/admin-dashboard" element={
+          user && user.role === 'Admin' ? <Layout><AdminDashboard user={user} /></Layout> : <Navigate to="/" />
         } />
       </Routes>
     </Router>

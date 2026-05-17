@@ -1,39 +1,30 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import axios from 'axios';
-import { UserPlus, Link as LinkIcon, Share, MessageSquare } from 'lucide-react';
+import { Link as LinkIcon, Share, MessageSquare } from 'lucide-react';
 import { API_URL } from '../config';
 
 const PosterDashboard = ({ user }) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState('posts');
-  const [invitationCode, setInvitationCode] = useState('');
   const [posts, setPosts] = useState([]);
   const [linkedAccounts, setLinkedAccounts] = useState([]);
-  const [joinedGroups, setJoinedGroups] = useState([]);
 
   // Mock social link state
   const [platform, setPlatform] = useState('Facebook');
-  const [accountId, setAccountId] = useState('');
-  const [accountName, setAccountName] = useState('');
   const [selectedAccounts, setSelectedAccounts] = useState({}); // { postId_platform: accountId }
-
-  const [senderUsername, setSenderUsername] = useState('');
-  const [senderEmail, setSenderEmail] = useState('');
 
   const token = localStorage.getItem('token');
 
   const fetchData = async () => {
     try {
       const headers = { 'x-auth-token': token };
-      const [postRes, accRes, groupRes] = await Promise.all([
+      const [postRes, accRes] = await Promise.all([
         axios.get(`${API_URL}/api/posts`, { headers }),
-        axios.get(`${API_URL}/api/social/accounts`, { headers }),
-        axios.get(`${API_URL}/api/groups/my-groups`, { headers }) // I'll add this endpoint
+        axios.get(`${API_URL}/api/social/accounts`, { headers })
       ]);
       setPosts(postRes.data);
       setLinkedAccounts(accRes.data);
-      setJoinedGroups(groupRes.data);
     } catch (err) {
       console.error(err);
     }
@@ -58,11 +49,7 @@ const PosterDashboard = ({ user }) => {
 
   const handleOAuthCallback = async (code) => {
     try {
-      // Hardcode the redirectUri to match exactly what is registered in Facebook
       const redirectUri = 'https://mkt.kaiyovietnam.vn/poster-dashboard';
-      
-      console.error('Sending callback with redirectUri:', redirectUri);
-      
       await axios.post(`${API_URL}/api/social/link`, {
         platform: 'Facebook',
         code,
@@ -77,20 +64,6 @@ const PosterDashboard = ({ user }) => {
     }
   };
 
-  const handleJoinGroup = async (e) => {
-    e.preventDefault();
-    try {
-      await axios.post(`${API_URL}/api/groups/join`, { invitationCode }, {
-        headers: { 'x-auth-token': token }
-      });
-      alert('Successfully joined group!');
-      setInvitationCode('');
-      fetchData(); // Refresh posts that might be available now
-    } catch (err) {
-      alert(err.response?.data?.msg || 'Error joining group');
-    }
-  };
-
   const handleLinkAccount = (e) => {
     e.preventDefault();
     if (platform === 'Facebook') {
@@ -99,9 +72,7 @@ const PosterDashboard = ({ user }) => {
         alert('Facebook App ID is not configured. Please add VITE_FB_APP_ID to .env');
         return;
       }
-      // Hardcode the redirectUri to match exactly what is registered in Facebook
       const redirectUri = 'https://mkt.kaiyovietnam.vn/poster-dashboard';
-      
       const oauthUrl = `https://www.facebook.com/v20.0/dialog/oauth?client_id=${appId}&redirect_uri=${redirectUri}&scope=pages_manage_posts,pages_read_engagement,pages_show_list&state=facebook`;
       window.location.href = oauthUrl;
     } else {
@@ -126,31 +97,12 @@ const PosterDashboard = ({ user }) => {
     }
   };
 
-  const handleCreateSender = async (e) => {
-    e.preventDefault();
-    try {
-      const res = await axios.post(`${API_URL}/api/auth/register`, {
-        username: senderUsername,
-        email: senderEmail
-      }, {
-        headers: { 'x-auth-token': token }
-      });
-      alert(`Successfully created sender account!\nUsername: ${res.data.username}\nPassword: ${res.data.password}\n\nPlease share this password securely with the user.`);
-      setSenderUsername('');
-      setSenderEmail('');
-    } catch (err) {
-      alert(err.response?.data?.msg || 'Error creating sender');
-    }
-  };
-
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
         <h1 className="page-title" style={{ marginBottom: 0 }}>Poster Dashboard</h1>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           <button className={`btn ${activeTab === 'posts' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setActiveTab('posts')}><MessageSquare size={16}/> Feed</button>
-          <button className={`btn ${activeTab === 'groups' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setActiveTab('groups')}><UserPlus size={16}/> Join Group</button>
-          <button className={`btn ${activeTab === 'sender' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setActiveTab('sender')}><UserPlus size={16}/> Create Sender</button>
           <button className={`btn ${activeTab === 'social' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setActiveTab('social')}><LinkIcon size={16}/> Accounts</button>
         </div>
       </div>
@@ -160,29 +112,6 @@ const PosterDashboard = ({ user }) => {
           <h2 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             Action Area
           </h2>
-
-          {activeTab === 'groups' && (
-            <div>
-              <form onSubmit={handleJoinGroup} style={{ marginBottom: '2rem' }}>
-                <div className="form-group">
-                  <label>Invitation Code</label>
-                  <input type="text" className="input" required value={invitationCode} onChange={e => setInvitationCode(e.target.value)} placeholder="e.g. A1B2C3D4" />
-                </div>
-                <button type="submit" className="btn btn-primary">Join Group</button>
-              </form>
-
-              <h3 style={{ marginBottom: '1rem', fontSize: '1rem' }}>Groups You've Joined</h3>
-              {joinedGroups.length === 0 ? (
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>You haven't joined any groups yet.</p>
-              ) : (
-                joinedGroups.map(g => (
-                  <div key={g._id} className="list-item" style={{ background: 'rgba(255,255,255,0.05)', padding: '0.8rem', borderRadius: '8px', marginBottom: '0.5rem' }}>
-                    <span style={{ fontWeight: 600 }}>{g.name}</span>
-                  </div>
-                ))
-              )}
-            </div>
-          )}
 
           {activeTab === 'social' && (
             <form onSubmit={handleLinkAccount}>
@@ -203,39 +132,16 @@ const PosterDashboard = ({ user }) => {
             </form>
           )}
 
-          {activeTab === 'sender' && (
-            <form onSubmit={handleCreateSender} style={{ marginBottom: '2rem' }}>
-              <p style={{ color: 'var(--text-muted)', marginBottom: '1rem', fontSize: '0.9rem' }}>
-                Create a new Sender account. A random 8-character password will be generated for them.
-              </p>
-              <div className="form-group">
-                <label>Sender Username</label>
-                <input type="text" className="input" required value={senderUsername} onChange={e => setSenderUsername(e.target.value)} />
-              </div>
-              <div className="form-group">
-                <label>Sender Email</label>
-                <input type="email" className="input" required value={senderEmail} onChange={e => setSenderEmail(e.target.value)} />
-              </div>
-              <button type="submit" className="btn btn-primary">Create Sender Account</button>
-            </form>
-          )}
-
           {activeTab === 'posts' && (
              <p style={{ color: 'var(--text-muted)' }}>
-               Select a post from your feed on the right to share it to your linked platforms.
+               Select a post from the shared pool feed on the right to share it directly to your linked pages.
              </p>
           )}
         </div>
 
         <div className="card" style={{ maxHeight: '600px', overflowY: 'auto' }}>
-          <h2 style={{ marginBottom: '1.5rem' }}>Your {activeTab === 'social' ? 'Linked Accounts' : (activeTab === 'sender' ? 'Senders' : 'Content Feed')}</h2>
+          <h2 style={{ marginBottom: '1.5rem' }}>Your {activeTab === 'social' ? 'Linked Accounts' : 'Shared Pool Feed'}</h2>
           
-          {activeTab === 'sender' && (
-             <p style={{ color: 'var(--text-muted)' }}>
-               Fill out the form on the left to register a new Sender. Note their password once created, as it will be shown only once!
-             </p>
-          )}
-
           {activeTab === 'social' && linkedAccounts.map(acc => (
              <div key={acc._id} className="list-item">
               <div>
@@ -246,7 +152,7 @@ const PosterDashboard = ({ user }) => {
             </div>
           ))}
 
-          {(activeTab === 'posts' || activeTab === 'groups') && posts.map(p => (
+          {activeTab === 'posts' && posts.map(p => (
             <div key={p._id} className="card" style={{ marginBottom: '1rem', background: 'rgba(15, 23, 42, 0.4)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
                 <span style={{ fontWeight: 600, color: 'var(--primary)' }}>{p.product?.name}</span>
@@ -285,9 +191,9 @@ const PosterDashboard = ({ user }) => {
             </div>
           ))}
 
-          {(activeTab === 'posts' || activeTab === 'groups') && posts.length === 0 && (
+          {activeTab === 'posts' && posts.length === 0 && (
             <p style={{ color: 'var(--text-muted)', textAlign: 'center', marginTop: '2rem' }}>
-              No posts available. Join a group to see content.
+              No posts available yet.
             </p>
           )}
 

@@ -2,7 +2,6 @@ const mongoose = require('mongoose');
 
 const PostSchema = new mongoose.Schema({
   product: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true },
-  group: { type: mongoose.Schema.Types.ObjectId, ref: 'Group', required: true },
   sender: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   content: { type: String, required: true },
   platforms: [{ type: String, enum: ['Facebook', 'Zalo', 'TikTok'] }], // Where this post should go

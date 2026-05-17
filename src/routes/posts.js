@@ -10,7 +10,7 @@ const authorize = require('../middleware/authorize');
 // @desc    Create a new post (Sender only)
 router.post('/', auth, authorize(['Sender']), async (req, res) => {
   try {
-    const { productId, groupId, content, platforms, scheduledAt } = req.body;
+    const { productId, content, platforms, scheduledAt } = req.body;
 
     // Check if user owns product
     const product = await Product.findById(productId);
@@ -18,20 +18,13 @@ router.post('/', auth, authorize(['Sender']), async (req, res) => {
       return res.status(400).json({ msg: 'Invalid product or unauthorized' });
     }
 
-    // Check if user owns group
-    const group = await Group.findById(groupId);
-    if (!group || group.owner.toString() !== req.user.id) {
-      return res.status(400).json({ msg: 'Invalid group or unauthorized' });
-    }
-
     const newPost = new Post({
       product: productId,
-      group: groupId,
       sender: req.user.id,
       content,
       platforms,
       scheduledAt: scheduledAt || null,
-      status: scheduledAt ? 'Pending' : 'Pending' // Will be processed by cron or immediately
+      status: 'Pending'
     });
 
     await newPost.save();
@@ -49,17 +42,11 @@ router.get('/', auth, async (req, res) => {
     if (req.user.role === 'Sender') {
       const posts = await Post.find({ sender: req.user.id })
         .populate('product', ['name', 'imageUrl'])
-        .populate('group', ['name'])
         .sort({ createdAt: -1 });
       return res.json(posts);
     } else {
-      // Poster role: get posts from groups they are in
-      const groups = await Group.find({ members: req.user.id }).select('_id');
-      const groupIds = groups.map(g => g._id);
-      
-      console.log(`Poster ${req.user.id} is in groups: ${groupIds}`);
-
-      const posts = await Post.find({ group: { $in: groupIds } })
+      // Poster/Admin role: get all posts from the single pool
+      const posts = await Post.find({})
         .populate('product', ['name', 'description', 'imageUrl'])
         .populate('sender', ['username'])
         .sort({ createdAt: -1 });

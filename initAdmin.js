@@ -11,20 +11,20 @@ const initAdmin = async () => {
     // Check if exists
     let user = await User.findOne({ email: 'nddung2609@gmail.com' });
     if (user) {
-      console.log('User already exists. Updating password and role to Poster...');
+      console.log('User already exists. Updating password and role to Admin...');
       user.password = 'kaiyovietnam';
-      user.role = 'Poster';
+      user.role = 'Admin';
       await user.save();
-      console.log('User updated successfully.');
+      console.log('User updated to Admin successfully.');
     } else {
       user = new User({
-        username: 'Admin Poster', 
+        username: 'Admin', 
         email: 'nddung2609@gmail.com',
         password: 'kaiyovietnam',
-        role: 'Poster'
+        role: 'Admin'
       });
       await user.save();
-      console.log('Poster account created successfully.');
+      console.log('Admin account created successfully.');
     }
   } catch (err) {
     console.error('Error:', err);

@@ -24,6 +24,11 @@ const Header = ({ user, onLogout }) => {
             <LayoutDashboard size={18} />
           </Link>
         )}
+        {user?.role === 'Admin' && (
+          <Link to="/admin-dashboard" className="btn btn-secondary" title="Dashboard">
+            <LayoutDashboard size={18} />
+          </Link>
+        )}
         
         <Link to="/profile" className="user-avatar" title="View Profile">
           {user?.username?.charAt(0).toUpperCase()}

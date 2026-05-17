@@ -8,11 +8,18 @@ const authorize = require('../middleware/authorize');
 const router = express.Router();
 
 // @route   POST /api/auth/register
-// @desc    Register a Sender user (Only Poster can do this)
-router.post('/register', auth, authorize(['Poster']), async (req, res) => {
+// @desc    Register a new user (Admin only)
+router.post('/register', auth, authorize(['Admin']), async (req, res) => {
   try {
-    const { username, email } = req.body;
-    const role = 'Sender';
+    const { username, email, role } = req.body;
+    
+    if (!username || !email || !role) {
+      return res.status(400).json({ msg: 'Please enter all fields' });
+    }
+
+    if (!['Sender', 'Poster'].includes(role)) {
+      return res.status(400).json({ msg: 'Invalid role specified' });
+    }
     
     // Check if user exists
     let user = await User.findOne({ email });
@@ -30,7 +37,7 @@ router.post('/register', auth, authorize(['Poster']), async (req, res) => {
       email: user.email, 
       role: user.role,
       password: generatedPassword,
-      msg: 'Sender account created successfully!'
+      msg: `${role} account created successfully!`
     });
   } catch (err) {
     console.error(err.message);
@@ -100,6 +107,34 @@ router.put('/change-password', auth, async (req, res) => {
     res.json({ msg: 'Password updated successfully' });
   } catch (err) {
     console.error(err.message);
+    res.status(500).send('Server Error');
+  }
+});
+
+// @route   GET /api/auth/users
+// @desc    Get all users (Admin only)
+router.get('/users', auth, authorize(['Admin']), async (req, res) => {
+  try {
+    const users = await User.find({}).select('-password').sort({ createdAt: -1 });
+    res.json(users);
+  } catch (err) {
+    res.status(500).send('Server Error');
+  }
+});
+
+// @route   DELETE /api/auth/users/:id
+// @desc    Delete a user (Admin only)
+router.delete('/users/:id', auth, authorize(['Admin']), async (req, res) => {
+  try {
+    if (req.params.id === req.user.id) {
+      return res.status(400).json({ msg: 'You cannot delete your own admin account' });
+    }
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ msg: 'User not found' });
+
+    await User.findByIdAndDelete(req.params.id);
+    res.json({ msg: 'User deleted successfully' });
+  } catch (err) {
     res.status(500).send('Server Error');
   }
 });

@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Plus, Users, Package, Send } from 'lucide-react';
+import { Package, Send } from 'lucide-react';
 import { API_URL } from '../config';
 
 const SenderDashboard = ({ user }) => {
   const [activeTab, setActiveTab] = useState('products');
   const [products, setProducts] = useState([]);
-  const [groups, setGroups] = useState([]);
   const [posts, setPosts] = useState([]);
 
   // Form states
@@ -14,11 +13,8 @@ const SenderDashboard = ({ user }) => {
   const [productDesc, setProductDesc] = useState('');
   const [productImage, setProductImage] = useState(null);
 
-  const [groupName, setGroupName] = useState('');
-
   const [postContent, setPostContent] = useState('');
   const [postProductId, setPostProductId] = useState('');
-  const [postGroupId, setPostGroupId] = useState('');
   const [postScheduledAt, setPostScheduledAt] = useState('');
   const [postPlatforms, setPostPlatforms] = useState({ Facebook: true, Zalo: false, TikTok: false });
 
@@ -30,14 +26,12 @@ const SenderDashboard = ({ user }) => {
   const fetchData = async () => {
     try {
       const headers = { 'x-auth-token': token };
-      const [prodRes, postRes, groupRes] = await Promise.all([
+      const [prodRes, postRes] = await Promise.all([
         axios.get(`${API_URL}/api/products`, { headers }),
-        axios.get(`${API_URL}/api/posts`, { headers }),
-        axios.get(`${API_URL}/api/groups`, { headers })
+        axios.get(`${API_URL}/api/posts`, { headers })
       ]);
       setProducts(prodRes.data);
       setPosts(postRes.data);
-      setGroups(groupRes.data);
     } catch (err) {
       console.error(err);
     }
@@ -60,12 +54,12 @@ const SenderDashboard = ({ user }) => {
         await axios.put(`${API_URL}/api/products/${editingProductId}`, formData, {
           headers: { 'x-auth-token': token, 'Content-Type': 'multipart/form-data' }
         });
-        alert('Product updated!');
+        alert('Product updated successfully!');
       } else {
         await axios.post(`${API_URL}/api/products`, formData, {
           headers: { 'x-auth-token': token, 'Content-Type': 'multipart/form-data' }
         });
-        alert('Product created!');
+        alert('Product created successfully!');
       }
       setProductName(''); setProductDesc(''); setProductImage(null); 
       setEditingProductId(null); setProductIsAvailable(true);
@@ -96,20 +90,6 @@ const SenderDashboard = ({ user }) => {
     }
   };
 
-  const handleCreateGroup = async (e) => {
-    e.preventDefault();
-    try {
-      const res = await axios.post(`${API_URL}/api/groups`, { name: groupName }, {
-        headers: { 'x-auth-token': token }
-      });
-      alert(`Group created! Invite Code: ${res.data.invitationCode}`);
-      setGroupName('');
-      // update groups list if we were displaying them
-    } catch (err) {
-      alert('Error creating group');
-    }
-  };
-
   const handleCreatePost = async (e) => {
     e.preventDefault();
     const selectedPlatforms = Object.keys(postPlatforms).filter(key => postPlatforms[key]);
@@ -117,18 +97,17 @@ const SenderDashboard = ({ user }) => {
     try {
       await axios.post(`${API_URL}/api/posts`, {
         productId: postProductId,
-        groupId: postGroupId, // The sender needs to type the group ID for now (in real app, dropdown)
         content: postContent,
         platforms: selectedPlatforms,
         scheduledAt: postScheduledAt || null
       }, {
         headers: { 'x-auth-token': token }
       });
-      alert('Post scheduled/created!');
+      alert('Post created in the shared pool!');
       setPostContent(''); setPostScheduledAt('');
       fetchData();
     } catch (err) {
-      alert('Error creating post. Make sure Product ID and Group ID are valid and owned by you.');
+      alert('Error creating post. Make sure Product is valid and owned by you.');
     }
   };
 
@@ -138,7 +117,6 @@ const SenderDashboard = ({ user }) => {
         <h1 className="page-title" style={{ marginBottom: 0 }}>Sender Dashboard</h1>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           <button className={`btn ${activeTab === 'products' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setActiveTab('products')}><Package size={16}/> Products</button>
-          <button className={`btn ${activeTab === 'groups' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setActiveTab('groups')}><Users size={16}/> Groups</button>
           <button className={`btn ${activeTab === 'posts' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setActiveTab('posts')}><Send size={16}/> Posts</button>
         </div>
       </div>
@@ -176,36 +154,14 @@ const SenderDashboard = ({ user }) => {
             </form>
           )}
 
-          {activeTab === 'groups' && (
-            <form onSubmit={handleCreateGroup}>
-              <div className="form-group">
-                <label>Group Name</label>
-                <input type="text" className="input" required value={groupName} onChange={e => setGroupName(e.target.value)} />
-              </div>
-              <p style={{ color: 'var(--text-muted)', marginBottom: '1rem', fontSize: '0.9rem' }}>
-                Creating a group will generate an invitation code that Posters can use to join.
-              </p>
-              <button type="submit" className="btn btn-primary">Create Group</button>
-            </form>
-          )}
-
           {activeTab === 'posts' && (
             <form onSubmit={handleCreatePost}>
-               <div className="form-group">
+              <div className="form-group">
                 <label>Select Product</label>
                 <select className="input" required value={postProductId} onChange={e => setPostProductId(e.target.value)}>
                   <option value="">-- Choose a Product --</option>
                   {products.map(p => (
                     <option key={p._id} value={p._id}>{p.name}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="form-group">
-                <label>Select Group</label>
-                <select className="input" required value={postGroupId} onChange={e => setPostGroupId(e.target.value)}>
-                  <option value="">-- Choose a Group --</option>
-                  {groups.map(g => (
-                    <option key={g._id} value={g._id}>{g.name}</option>
                   ))}
                 </select>
               </div>
@@ -266,17 +222,6 @@ const SenderDashboard = ({ user }) => {
               {p.scheduledAt && <p style={{ fontSize: '0.8rem' }}>Scheduled: {new Date(p.scheduledAt).toLocaleString()}</p>}
             </div>
           ))}
-
-          {activeTab === 'groups' && groups.map(g => (
-             <div key={g._id} className="list-item">
-               <div>
-                 <p style={{ fontWeight: 600 }}>{g.name}</p>
-                 <p style={{ fontSize: '0.8rem', color: 'var(--primary)' }}>Code: {g.invitationCode}</p>
-               </div>
-               <span className="badge badge-success">{g.members.length} Members</span>
-             </div>
-           ))}
-
         </div>
       </div>
     </div>
