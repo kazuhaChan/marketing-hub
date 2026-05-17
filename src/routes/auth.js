@@ -3,28 +3,42 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const User = require('../models/User');
 const auth = require('../middleware/auth');
+const crypto = require('crypto');
+const { sendPasswordEmail } = require('../utils/mailer');
+const authorize = require('../middleware/authorize');
 const router = express.Router();
 
 // @route   POST /api/auth/register
-// @desc    Register user
-router.post('/register', async (req, res) => {
+// @desc    Register a Sender user (Only Poster can do this)
+router.post('/register', auth, authorize(['Poster']), async (req, res) => {
   try {
-    const { username, email, password, role } = req.body;
+    const { username, email } = req.body;
+    const role = 'Sender';
     
     // Check if user exists
     let user = await User.findOne({ email });
     if (user) return res.status(400).json({ msg: 'User already exists' });
 
-    user = new User({ username, email, password, role });
+    // Generate random password
+    const generatedPassword = crypto.randomBytes(4).toString('hex'); // 8 characters
+
+    user = new User({ username, email, password: generatedPassword, role });
     await user.save();
+
+    // Send email (async)
+    const emailSent = await sendPasswordEmail(email, username, generatedPassword);
 
     res.status(201).json({ 
       id: user.id, 
       username: user.username, 
       email: user.email, 
-      role: user.role 
+      role: user.role,
+      password: generatedPassword,
+      emailSent: emailSent,
+      msg: emailSent ? 'User registered. Password sent to email.' : 'User registered, but email failed to send. Please check server logs.'
     });
   } catch (err) {
+    console.error(err.message);
     res.status(500).send('Server Error');
   }
 });

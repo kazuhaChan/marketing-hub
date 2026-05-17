@@ -57,9 +57,6 @@ const Login = ({ setUser }) => {
           </button>
         </form>
         
-        <p style={{ textAlign: 'center', marginTop: '1.5rem', color: 'var(--text-muted)' }}>
-          Don't have an account? <Link to="/register">Register</Link>
-        </p>
       </div>
     </div>
   );

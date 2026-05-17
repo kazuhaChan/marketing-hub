@@ -18,6 +18,9 @@ const PosterDashboard = ({ user }) => {
   const [accountName, setAccountName] = useState('');
   const [selectedAccounts, setSelectedAccounts] = useState({}); // { postId_platform: accountId }
 
+  const [senderUsername, setSenderUsername] = useState('');
+  const [senderEmail, setSenderEmail] = useState('');
+
   const token = localStorage.getItem('token');
 
   const fetchData = async () => {
@@ -123,6 +126,23 @@ const PosterDashboard = ({ user }) => {
     }
   };
 
+  const handleCreateSender = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await axios.post(`${API_URL}/api/auth/register`, {
+        username: senderUsername,
+        email: senderEmail
+      }, {
+        headers: { 'x-auth-token': token }
+      });
+      alert(`Successfully created sender account!\nUsername: ${res.data.username}\nPassword: ${res.data.password}\n\nPlease share this password securely with the user.`);
+      setSenderUsername('');
+      setSenderEmail('');
+    } catch (err) {
+      alert(err.response?.data?.msg || 'Error creating sender');
+    }
+  };
+
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
@@ -130,6 +150,7 @@ const PosterDashboard = ({ user }) => {
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           <button className={`btn ${activeTab === 'posts' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setActiveTab('posts')}><MessageSquare size={16}/> Feed</button>
           <button className={`btn ${activeTab === 'groups' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setActiveTab('groups')}><UserPlus size={16}/> Join Group</button>
+          <button className={`btn ${activeTab === 'sender' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setActiveTab('sender')}><UserPlus size={16}/> Create Sender</button>
           <button className={`btn ${activeTab === 'social' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setActiveTab('social')}><LinkIcon size={16}/> Accounts</button>
         </div>
       </div>
@@ -182,6 +203,23 @@ const PosterDashboard = ({ user }) => {
             </form>
           )}
 
+          {activeTab === 'sender' && (
+            <form onSubmit={handleCreateSender} style={{ marginBottom: '2rem' }}>
+              <p style={{ color: 'var(--text-muted)', marginBottom: '1rem', fontSize: '0.9rem' }}>
+                Create a new Sender account. A random 8-character password will be generated for them.
+              </p>
+              <div className="form-group">
+                <label>Sender Username</label>
+                <input type="text" className="input" required value={senderUsername} onChange={e => setSenderUsername(e.target.value)} />
+              </div>
+              <div className="form-group">
+                <label>Sender Email</label>
+                <input type="email" className="input" required value={senderEmail} onChange={e => setSenderEmail(e.target.value)} />
+              </div>
+              <button type="submit" className="btn btn-primary">Create Sender Account</button>
+            </form>
+          )}
+
           {activeTab === 'posts' && (
              <p style={{ color: 'var(--text-muted)' }}>
                Select a post from your feed on the right to share it to your linked platforms.
@@ -190,8 +228,14 @@ const PosterDashboard = ({ user }) => {
         </div>
 
         <div className="card" style={{ maxHeight: '600px', overflowY: 'auto' }}>
-          <h2 style={{ marginBottom: '1.5rem' }}>Your {activeTab === 'social' ? 'Linked Accounts' : 'Content Feed'}</h2>
+          <h2 style={{ marginBottom: '1.5rem' }}>Your {activeTab === 'social' ? 'Linked Accounts' : (activeTab === 'sender' ? 'Senders' : 'Content Feed')}</h2>
           
+          {activeTab === 'sender' && (
+             <p style={{ color: 'var(--text-muted)' }}>
+               Fill out the form on the left to register a new Sender. Note their password once created, as it will be shown only once!
+             </p>
+          )}
+
           {activeTab === 'social' && linkedAccounts.map(acc => (
              <div key={acc._id} className="list-item">
               <div>

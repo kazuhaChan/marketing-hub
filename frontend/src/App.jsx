@@ -1,6 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/Login';
-import Register from './pages/Register';
 import Home from './pages/Home';
 import ProductDetail from './pages/ProductDetail';
 import Profile from './pages/Profile';
@@ -39,7 +38,6 @@ function App() {
     <Router>
       <Routes>
         <Route path="/login" element={<Login setUser={setUser} />} />
-        <Route path="/register" element={<Register setUser={setUser} />} />
         
         {/* Protected Routes */}
         <Route path="/" element={user ? <Layout><Home /></Layout> : <Navigate to="/login" />} />
