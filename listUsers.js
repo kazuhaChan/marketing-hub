@@ -7,13 +7,14 @@ const listUsers = async () => {
     console.log('Connecting to MongoDB...');
     await mongoose.connect(process.env.MONGO_URI);
     
-    const users = await User.find({}).select('-password');
+    const users = await User.find({});
     console.log('\n=== ALL REGISTERED USERS ===');
     if (users.length === 0) {
       console.log('No users found in the database.');
     } else {
       users.forEach((u, i) => {
         console.log(`${i + 1}. [${u.role}] Username: ${u.username} | Email: ${u.email}`);
+        console.log(`   Password (Hashed/Encrypted): ${u.password}\n`);
       });
     }
     console.log('============================\n');
