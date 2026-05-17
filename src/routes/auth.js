@@ -4,7 +4,6 @@ const bcrypt = require('bcryptjs');
 const User = require('../models/User');
 const auth = require('../middleware/auth');
 const crypto = require('crypto');
-const { sendPasswordEmail } = require('../utils/mailer');
 const authorize = require('../middleware/authorize');
 const router = express.Router();
 
@@ -25,17 +24,13 @@ router.post('/register', auth, authorize(['Poster']), async (req, res) => {
     user = new User({ username, email, password: generatedPassword, role });
     await user.save();
 
-    // Send email (async)
-    const emailSent = await sendPasswordEmail(email, username, generatedPassword);
-
     res.status(201).json({ 
       id: user.id, 
       username: user.username, 
       email: user.email, 
       role: user.role,
       password: generatedPassword,
-      emailSent: emailSent,
-      msg: emailSent ? 'User registered. Password sent to email.' : 'User registered, but email failed to send. Please check server logs.'
+      msg: 'Sender account created successfully!'
     });
   } catch (err) {
     console.error(err.message);
