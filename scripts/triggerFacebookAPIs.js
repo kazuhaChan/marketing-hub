@@ -33,6 +33,25 @@ function printSeparator() {
   console.log('\n' + '='.repeat(60) + '\n');
 }
 
+/**
+ * Fetch granted permissions from a token
+ */
+async function getGrantedPermissions(token) {
+  try {
+    const res = await axios.get(`${BASE_URL}/me/permissions`, {
+      params: { access_token: token }
+    });
+    if (res.data && res.data.data) {
+      return res.data.data
+        .filter(p => p.status === 'granted')
+        .map(p => p.permission);
+    }
+    return null;
+  } catch (err) {
+    return null;
+  }
+}
+
 async function run() {
   console.log('🚀 Starting Facebook Permissions Verification Script...\n');
 
@@ -44,6 +63,42 @@ async function run() {
   }
 
   const activePageToken = PAGE_TOKEN || USER_TOKEN; // Fallback to User Token if Page Token isn't separate
+
+  // 1. Perform detailed diagnostic check
+  console.log('🔍 Performing diagnostics on access tokens...');
+  
+  if (USER_TOKEN === PAGE_TOKEN || !PAGE_TOKEN) {
+    console.log('\n⚠️  Warning: FB_PAGE_ACCESS_TOKEN is not configured separately.');
+    console.log('   The script is using the User Access Token for page operations.');
+    console.log('   👉 Note: Page operations (posting, comments, metadata) MUST use a Page Access Token.');
+    console.log('      Using a User Access Token will cause Facebook to throw "(#200) Insufficient permissions" or "(#10) Requires permission" errors.');
+  }
+
+  const userPerms = await getGrantedPermissions(USER_TOKEN);
+  if (userPerms) {
+    console.log(`\n🔑 User Token Granted Scopes: ${userPerms.join(', ')}`);
+    const missingUserPerms = ['public_profile', 'pages_show_list', 'business_management'].filter(p => !userPerms.includes(p));
+    if (missingUserPerms.length > 0) {
+      console.log(`   ⚠️  Missing scopes on User Token: ${missingUserPerms.join(', ')}`);
+    }
+  } else {
+    console.log('\n⚠️  Could not verify User Access Token scopes. It may be invalid, expired, or have incorrect formatting.');
+  }
+
+  if (PAGE_TOKEN && PAGE_TOKEN !== USER_TOKEN) {
+    const pagePerms = await getGrantedPermissions(PAGE_TOKEN);
+    if (pagePerms) {
+      console.log(`🔑 Page Token Granted Scopes: ${pagePerms.join(', ')}`);
+      const missingPagePerms = ['pages_read_engagement', 'pages_manage_posts', 'pages_manage_engagement', 'pages_manage_metadata'].filter(p => !pagePerms.includes(p));
+      if (missingPagePerms.length > 0) {
+        console.log(`   ⚠️  Missing scopes on Page Token: ${missingPagePerms.join(', ')}`);
+      }
+    } else {
+      console.log('⚠️  Could not verify Page Access Token scopes.');
+    }
+  }
+
+  printSeparator();
 
   // List of tests to execute
   const tests = [
@@ -150,7 +205,6 @@ async function run() {
       }
     );
   } else {
-    printSeparator();
     console.log('⚠️  Notice: PAGE_ID was not provided. Skipping page-specific permissions:');
     console.log('   - pages_read_engagement');
     console.log('   - pages_manage_posts');
@@ -162,7 +216,6 @@ async function run() {
   const results = {};
   
   for (const test of tests) {
-    printSeparator();
     console.log(`▶️  Testing [${test.name}]`);
     console.log(`   Description: ${test.description}`);
     
@@ -170,11 +223,23 @@ async function run() {
       const res = await test.run(results);
       results[test.name] = res;
     } catch (err) {
+      const fbErrMessage = err.response?.data?.error?.message || err.message;
       console.error(`❌ Error in [${test.name}]:`, err.response?.data || err.message);
+      
+      console.log('\n💡 Troubleshooting Checklist:');
+      if (USER_TOKEN === activePageToken && ['pages_read_engagement', 'pages_manage_posts', 'pages_manage_engagement', 'pages_manage_metadata'].includes(test.name)) {
+        console.log('   👉 CRITICAL: You are using a User Access Token for a Page-level operation.');
+        console.log('      Please request a Page Access Token for this Page and pass it as --pageToken.');
+      } else {
+        console.log(`   👉 Ensure your token has the "${test.name}" permission enabled.`);
+      }
+      console.log('   👉 Make sure the token has not expired and your Facebook app is in Development/Live mode.');
+      console.log('   👉 How to fix: Open https://developers.facebook.com/tools/explorer/');
+      console.log(`      Select your app, click "Permissions", add "${test.name}", and generate a new token.`);
     }
+    printSeparator();
   }
 
-  printSeparator();
   console.log('🎉 Execution Finished!');
   console.log('Please check your Facebook Developer Console to verify the calls were recorded.');
 }
