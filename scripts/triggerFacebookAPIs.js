@@ -62,13 +62,39 @@ async function run() {
     process.exit(1);
   }
 
-  const activePageToken = PAGE_TOKEN || USER_TOKEN; // Fallback to User Token if Page Token isn't separate
+  let activePageToken = PAGE_TOKEN;
 
-  // 1. Perform detailed diagnostic check
-  console.log('🔍 Performing diagnostics on access tokens...');
+  // 1. Proactively exchange User Token for Page Token if Page ID is provided and Page Token is missing/User Token
+  if (PAGE_ID && (!activePageToken || activePageToken === USER_TOKEN)) {
+    console.log('🔄 Attempting to automatically fetch Page Access Token using your User Token...');
+    try {
+      const pageTokenRes = await axios.get(`${BASE_URL}/${PAGE_ID}`, {
+        params: {
+          fields: 'access_token',
+          access_token: USER_TOKEN
+        }
+      });
+      if (pageTokenRes.data && pageTokenRes.data.access_token) {
+        activePageToken = pageTokenRes.data.access_token;
+        console.log('✅ Successfully resolved Page Access Token automatically!');
+      } else {
+        console.log('⚠️  Could not automatically resolve Page Access Token (response did not contain token).');
+      }
+    } catch (err) {
+      console.log('⚠️  Could not automatically resolve Page Access Token. Error:', err.response?.data?.error?.message || err.message);
+      console.log('   We will fall back to using your User Access Token for page operations.');
+    }
+  }
+
+  if (!activePageToken) {
+    activePageToken = USER_TOKEN;
+  }
+
+  // 2. Perform detailed diagnostic check
+  console.log('\n🔍 Performing diagnostics on access tokens...');
   
-  if (USER_TOKEN === PAGE_TOKEN || !PAGE_TOKEN) {
-    console.log('\n⚠️  Warning: FB_PAGE_ACCESS_TOKEN is not configured separately.');
+  if (USER_TOKEN === activePageToken) {
+    console.log('⚠️  Warning: FB_PAGE_ACCESS_TOKEN is not configured separately.');
     console.log('   The script is using the User Access Token for page operations.');
     console.log('   👉 Note: Page operations (posting, comments, metadata) MUST use a Page Access Token.');
     console.log('      Using a User Access Token will cause Facebook to throw "(#200) Insufficient permissions" or "(#10) Requires permission" errors.');
@@ -85,8 +111,8 @@ async function run() {
     console.log('\n⚠️  Could not verify User Access Token scopes. It may be invalid, expired, or have incorrect formatting.');
   }
 
-  if (PAGE_TOKEN && PAGE_TOKEN !== USER_TOKEN) {
-    const pagePerms = await getGrantedPermissions(PAGE_TOKEN);
+  if (activePageToken && activePageToken !== USER_TOKEN) {
+    const pagePerms = await getGrantedPermissions(activePageToken);
     if (pagePerms) {
       console.log(`🔑 Page Token Granted Scopes: ${pagePerms.join(', ')}`);
       const missingPagePerms = ['pages_read_engagement', 'pages_manage_posts', 'pages_manage_engagement', 'pages_manage_metadata'].filter(p => !pagePerms.includes(p));
@@ -223,13 +249,13 @@ async function run() {
       const res = await test.run(results);
       results[test.name] = res;
     } catch (err) {
-      const fbErrMessage = err.response?.data?.error?.message || err.message;
       console.error(`❌ Error in [${test.name}]:`, err.response?.data || err.message);
       
       console.log('\n💡 Troubleshooting Checklist:');
       if (USER_TOKEN === activePageToken && ['pages_read_engagement', 'pages_manage_posts', 'pages_manage_engagement', 'pages_manage_metadata'].includes(test.name)) {
         console.log('   👉 CRITICAL: You are using a User Access Token for a Page-level operation.');
-        console.log('      Please request a Page Access Token for this Page and pass it as --pageToken.');
+        console.log('      This is not allowed by Facebook. The Page endpoints require a Page Access Token.');
+        console.log('      We tried to fetch it automatically, but it failed (possibly because of missing scopes).');
       } else {
         console.log(`   👉 Ensure your token has the "${test.name}" permission enabled.`);
       }
