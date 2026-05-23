@@ -6,14 +6,14 @@ const auth = require('../middleware/auth');
 const authorize = require('../middleware/authorize');
 
 // @route   POST /api/posts
-// @desc    Create a new post (Sender only)
-router.post('/', auth, authorize(['Sender']), async (req, res) => {
+// @desc    Create a new post (Sender and Admin)
+router.post('/', auth, authorize(['Sender', 'Admin']), async (req, res) => {
   try {
     const { productId, content, platforms, scheduledAt } = req.body;
 
-    // Check if user owns product
+    // Check if user owns product or is Admin
     const product = await Product.findById(productId);
-    if (!product || product.owner.toString() !== req.user.id) {
+    if (!product || (product.owner.toString() !== req.user.id && req.user.role !== 'Admin')) {
       return res.status(400).json({ msg: 'Invalid product or unauthorized' });
     }
 

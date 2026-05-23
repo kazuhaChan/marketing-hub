@@ -40,8 +40,8 @@ const upload = multer({
 });
 
 // @route   POST /api/products
-// @desc    Create a product (Sender only)
-router.post('/', auth, authorize(['Sender']), upload.single('image'), async (req, res) => {
+// @desc    Create a product (Sender and Admin)
+router.post('/', auth, authorize(['Sender', 'Admin']), upload.single('image'), async (req, res) => {
   try {
     const { name, description } = req.body;
     let imageUrl = '';
@@ -66,14 +66,16 @@ router.post('/', auth, authorize(['Sender']), upload.single('image'), async (req
 });
 
 // @route   GET /api/products
-// @desc    Get all products (For Sender, get own; For Poster, get all available in groups they joined, but for now we'll fetch all or handle logic in groups)
+// @desc    Get all products (For Sender, get own; For Poster, get available; For Admin, get all)
 router.get('/', auth, async (req, res) => {
   try {
     let products = [];
-    if (req.user.role === 'Sender') {
+    if (req.user.role === 'Admin') {
+      products = await Product.find({}).sort({ createdAt: -1 });
+    } else if (req.user.role === 'Sender') {
       products = await Product.find({ owner: req.user.id }).sort({ createdAt: -1 });
     } else {
-      // Poster/Admin role: see all available products in the single pool
+      // Poster role: see all available products in the single pool
       products = await Product.find({ isAvailable: true }).sort({ createdAt: -1 });
     }
     res.json(products);
@@ -101,13 +103,13 @@ router.get('/:id', auth, async (req, res) => {
 
 // @route   PUT /api/products/:id
 // @desc    Update a product
-router.put('/:id', auth, authorize(['Sender']), upload.single('image'), async (req, res) => {
+router.put('/:id', auth, authorize(['Sender', 'Admin']), upload.single('image'), async (req, res) => {
   try {
     let product = await Product.findById(req.params.id);
     if (!product) return res.status(404).json({ msg: 'Product not found' });
 
-    // Make sure user owns product
-    if (product.owner.toString() !== req.user.id) {
+    // Make sure user owns product or is Admin
+    if (product.owner.toString() !== req.user.id && req.user.role !== 'Admin') {
       return res.status(401).json({ msg: 'Not authorized' });
     }
 
@@ -132,12 +134,12 @@ router.put('/:id', auth, authorize(['Sender']), upload.single('image'), async (r
 
 // @route   DELETE /api/products/:id
 // @desc    Delete a product
-router.delete('/:id', auth, authorize(['Sender']), async (req, res) => {
+router.delete('/:id', auth, authorize(['Sender', 'Admin']), async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
     if (!product) return res.status(404).json({ msg: 'Product not found' });
 
-    if (product.owner.toString() !== req.user.id) {
+    if (product.owner.toString() !== req.user.id && req.user.role !== 'Admin') {
       return res.status(401).json({ msg: 'Not authorized' });
     }
 

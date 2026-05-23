@@ -8,7 +8,7 @@ const axios = require('axios');
 
 // @route   POST /api/social/link
 // @desc    Link a social account (OAuth callback)
-router.post('/link', auth, authorize(['Poster']), async (req, res) => {
+router.post('/link', auth, authorize(['Poster', 'Admin']), async (req, res) => {
   try {
     const { platform, code, redirectUri } = req.body;
 
@@ -81,7 +81,7 @@ router.post('/link', auth, authorize(['Poster']), async (req, res) => {
 
 // @route   GET /api/social/accounts
 // @desc    Get linked accounts for the current user
-router.get('/accounts', auth, authorize(['Poster']), async (req, res) => {
+router.get('/accounts', auth, authorize(['Poster', 'Admin']), async (req, res) => {
   try {
     const accounts = await SocialAccount.find({ user: req.user.id });
     res.json(accounts);
@@ -93,7 +93,7 @@ router.get('/accounts', auth, authorize(['Poster']), async (req, res) => {
 
 // @route   POST /api/social/post/:postId
 // @desc    Manually post a specific post to linked platform
-router.post('/post/:postId', auth, authorize(['Poster']), async (req, res) => {
+router.post('/post/:postId', auth, authorize(['Poster', 'Admin']), async (req, res) => {
   try {
     const { platform, accountId } = req.body;
     const post = await Post.findById(req.params.postId).populate('product');

@@ -61,7 +61,7 @@ const ProductDetail = () => {
           <h3 style={{ marginBottom: '0.5rem', color: 'var(--text-muted)' }}>Description</h3>
           <p style={{ lineHeight: 1.8, marginBottom: '2rem' }}>{product.description}</p>
           
-          {user?.role === 'Poster' && product.isAvailable && (
+          {(user?.role === 'Poster' || user?.role === 'Admin') && product.isAvailable && (
             <div style={{ marginTop: 'auto', paddingTop: '2rem', borderTop: '1px solid var(--border)' }}>
               <h3 style={{ marginBottom: '1rem' }}>Share to Platforms</h3>
               <p style={{ color: 'var(--text-muted)', marginBottom: '1rem', fontSize: '0.9rem' }}>

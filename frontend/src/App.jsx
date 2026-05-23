@@ -47,11 +47,11 @@ function App() {
         
         {/* Role based Dashboards */}
         <Route path="/sender-dashboard" element={
-          user && user.role === 'Sender' ? <Layout><SenderDashboard user={user} /></Layout> : <Navigate to="/" />
+          user && (user.role === 'Sender' || user.role === 'Admin') ? <Layout><SenderDashboard user={user} /></Layout> : <Navigate to="/" />
         } />
         
         <Route path="/poster-dashboard" element={
-          user && user.role === 'Poster' ? <Layout><PosterDashboard user={user} /></Layout> : <Navigate to="/" />
+          user && (user.role === 'Poster' || user.role === 'Admin') ? <Layout><PosterDashboard user={user} /></Layout> : <Navigate to="/" />
         } />
         
         <Route path="/admin-dashboard" element={
