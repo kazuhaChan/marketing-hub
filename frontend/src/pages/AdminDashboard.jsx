@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { UserPlus, Users, Trash2, ShieldAlert, ShoppingCart } from 'lucide-react';
+import { UserPlus, Users, Trash2, ShieldAlert, ShoppingCart, Key, X } from 'lucide-react';
 import { API_URL } from '../config';
 
 const AdminDashboard = ({ user }) => {
@@ -15,6 +15,11 @@ const AdminDashboard = ({ user }) => {
   
   // Newly Created User password display
   const [createdUser, setCreatedUser] = useState(null);
+
+  // Admin password reset modal states
+  const [selectedUserForReset, setSelectedUserForReset] = useState(null);
+  const [newPasswordForUser, setNewPasswordForUser] = useState('');
+  const [isResetModalOpen, setIsResetModalOpen] = useState(false);
 
   const token = localStorage.getItem('token');
 
@@ -88,6 +93,37 @@ const AdminDashboard = ({ user }) => {
     } catch (err) {
       alert(err.response?.data?.msg || 'Error deleting user');
     }
+  };
+
+  const handleResetPassword = async (e) => {
+    e.preventDefault();
+    if (!newPasswordForUser || newPasswordForUser.length < 6) {
+      alert('Password must be at least 6 characters long');
+      return;
+    }
+
+    try {
+      const res = await axios.put(
+        `${API_URL}/api/auth/users/${selectedUserForReset._id}/change-password`,
+        { newPassword: newPasswordForUser },
+        { headers: { 'x-auth-token': token } }
+      );
+      alert(res.data.msg);
+      setIsResetModalOpen(false);
+      setNewPasswordForUser('');
+      setSelectedUserForReset(null);
+    } catch (err) {
+      alert(err.response?.data?.msg || 'Error resetting password');
+    }
+  };
+
+  const handleAutoGeneratePassword = () => {
+    const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    let pass = "";
+    for (let i = 0; i < 8; i++) {
+      pass += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    setNewPasswordForUser(pass);
   };
 
   return (
@@ -220,9 +256,24 @@ const AdminDashboard = ({ user }) => {
                     </div>
                   </div>
                   {u._id !== user.id && (
-                    <button onClick={() => handleDeleteUser(u._id, u.username)} className="btn btn-secondary" style={{ padding: '0.4rem', color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.2)' }} title="Delete Account">
-                      <Trash2 size={16} />
-                    </button>
+                    <div style={{ display: 'flex', gap: '0.35rem' }}>
+                      <button 
+                        onClick={() => { setSelectedUserForReset(u); setIsResetModalOpen(true); }} 
+                        className="btn btn-secondary" 
+                        style={{ padding: '0.4rem', color: 'var(--primary)', borderColor: 'rgba(59, 130, 246, 0.2)' }} 
+                        title="Reset User Password"
+                      >
+                        <Key size={16} />
+                      </button>
+                      <button 
+                        onClick={() => handleDeleteUser(u._id, u.username)} 
+                        className="btn btn-secondary" 
+                        style={{ padding: '0.4rem', color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.2)' }} 
+                        title="Delete Account"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
                   )}
                 </div>
               ))
@@ -230,6 +281,67 @@ const AdminDashboard = ({ user }) => {
           </div>
         </div>
       </div>
+
+      {/* Password Reset Modal */}
+      {isResetModalOpen && selectedUserForReset && (
+        <div className="modal-overlay" onClick={() => { setIsResetModalOpen(false); setSelectedUserForReset(null); }}>
+          <div className="modal-container" onClick={(e) => e.stopPropagation()}>
+            <button className="modal-close-btn" onClick={() => { setIsResetModalOpen(false); setSelectedUserForReset(null); }} aria-label="Close modal">
+              <X size={20} />
+            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
+              <div style={{ background: 'rgba(59, 130, 246, 0.15)', color: 'var(--primary)', padding: '0.6rem', borderRadius: '10px' }}>
+                <Key size={22} />
+              </div>
+              <div>
+                <h2 style={{ fontSize: '1.5rem', fontWeight: 700 }}>Reset Password</h2>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Change password for user "{selectedUserForReset.username}"</p>
+              </div>
+            </div>
+            <form onSubmit={handleResetPassword}>
+              <div className="form-group">
+                <label>New Password</label>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <input 
+                    type="text" 
+                    className="input" 
+                    required 
+                    value={newPasswordForUser} 
+                    onChange={e => setNewPasswordForUser(e.target.value)} 
+                    placeholder="Minimum 6 characters"
+                    style={{ flex: 1 }}
+                  />
+                  <button 
+                    type="button" 
+                    className="btn btn-secondary" 
+                    onClick={handleAutoGeneratePassword}
+                    style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}
+                  >
+                    Auto Gen
+                  </button>
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: '0.75rem', marginTop: '2rem' }}>
+                <button 
+                  type="button" 
+                  className="btn btn-secondary" 
+                  style={{ flex: 1 }} 
+                  onClick={() => { setIsResetModalOpen(false); setSelectedUserForReset(null); }}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  className="btn btn-primary" 
+                  style={{ flex: 1.5 }}
+                >
+                  Update Password
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

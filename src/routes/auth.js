@@ -139,4 +139,26 @@ router.delete('/users/:id', auth, authorize(['Admin']), async (req, res) => {
   }
 });
 
+// @route   PUT /api/auth/users/:id/change-password
+// @desc    Change a user's password (Admin only)
+router.put('/users/:id/change-password', auth, authorize(['Admin']), async (req, res) => {
+  try {
+    const { newPassword } = req.body;
+    if (!newPassword || newPassword.length < 6) {
+      return res.status(400).json({ msg: 'Password must be at least 6 characters long' });
+    }
+
+    const userToUpdate = await User.findById(req.params.id);
+    if (!userToUpdate) return res.status(404).json({ msg: 'User not found' });
+
+    userToUpdate.password = newPassword;
+    await userToUpdate.save();
+
+    res.json({ msg: `Password for user "${userToUpdate.username}" updated successfully!` });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server Error');
+  }
+});
+
 module.exports = router;
