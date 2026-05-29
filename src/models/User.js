@@ -6,6 +6,8 @@ const UserSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true, lowercase: true },
   password: { type: String, required: true },
   role: { type: String, enum: ['Sender', 'Poster', 'Admin'], required: true },
+  resetPasswordCode: { type: String },
+  resetPasswordExpires: { type: Date },
 }, { timestamps: true });
 
 // Pre-save hook to hash the password
