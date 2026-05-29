@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import axios from 'axios';
-import { Link as LinkIcon, Share, MessageSquare } from 'lucide-react';
+import { Link as LinkIcon, Share, MessageSquare, ShoppingCart } from 'lucide-react';
 import { API_URL } from '../config';
 
 const PosterDashboard = ({ user }) => {
@@ -9,6 +9,7 @@ const PosterDashboard = ({ user }) => {
   const [activeTab, setActiveTab] = useState('posts');
   const [posts, setPosts] = useState([]);
   const [linkedAccounts, setLinkedAccounts] = useState([]);
+  const [orders, setOrders] = useState([]);
 
   // Mock social link state
   const [platform, setPlatform] = useState('Facebook');
@@ -19,12 +20,14 @@ const PosterDashboard = ({ user }) => {
   const fetchData = async () => {
     try {
       const headers = { 'x-auth-token': token };
-      const [postRes, accRes] = await Promise.all([
+      const [postRes, accRes, orderRes] = await Promise.all([
         axios.get(`${API_URL}/api/posts`, { headers }),
-        axios.get(`${API_URL}/api/social/accounts`, { headers })
+        axios.get(`${API_URL}/api/social/accounts`, { headers }),
+        axios.get(`${API_URL}/api/orders`, { headers })
       ]);
       setPosts(postRes.data);
       setLinkedAccounts(accRes.data);
+      setOrders(orderRes.data);
     } catch (err) {
       console.error(err);
     }
@@ -104,13 +107,14 @@ const PosterDashboard = ({ user }) => {
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           <button className={`btn ${activeTab === 'posts' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setActiveTab('posts')}><MessageSquare size={16}/> Feed</button>
           <button className={`btn ${activeTab === 'social' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setActiveTab('social')}><LinkIcon size={16}/> Accounts</button>
+          <button className={`btn ${activeTab === 'orders' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setActiveTab('orders')}><ShoppingCart size={16}/> My Orders</button>
         </div>
       </div>
 
       <div className="dashboard-grid">
         <div className="card">
           <h2 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            Action Area
+            {activeTab === 'orders' ? 'Tracking Metrics' : 'Action Area'}
           </h2>
 
           {activeTab === 'social' && (
@@ -137,10 +141,32 @@ const PosterDashboard = ({ user }) => {
                Select a post from the shared pool feed on the right to share it directly to your linked pages.
              </p>
           )}
+
+          {activeTab === 'orders' && (
+            <div>
+              <p style={{ color: 'var(--text-muted)', marginBottom: '1.5rem', fontSize: '0.95rem' }}>
+                Track the delivery and fulfillment status of your unique product checkouts.
+              </p>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)', padding: '1rem', borderRadius: '10px', textAlign: 'center' }}>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginBottom: '0.2rem' }}>Total Orders</p>
+                  <p style={{ fontSize: '1.6rem', fontWeight: 700, color: 'var(--primary)' }}>{orders.length}</p>
+                </div>
+                <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)', padding: '1rem', borderRadius: '10px', textAlign: 'center' }}>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginBottom: '0.2rem' }}>Total Qty</p>
+                  <p style={{ fontSize: '1.6rem', fontWeight: 700, color: 'var(--success)' }}>
+                    {orders.reduce((sum, o) => sum + (o.quantity || 0), 0)}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="card" style={{ maxHeight: '600px', overflowY: 'auto' }}>
-          <h2 style={{ marginBottom: '1.5rem' }}>Your {activeTab === 'social' ? 'Linked Accounts' : 'Shared Pool Feed'}</h2>
+          <h2 style={{ marginBottom: '1.5rem' }}>
+            {activeTab === 'social' ? 'Your Linked Accounts' : (activeTab === 'orders' ? 'Your Tracked Orders' : 'Shared Pool Feed')}
+          </h2>
           
           {activeTab === 'social' && linkedAccounts.map(acc => (
              <div key={acc._id} className="list-item">
@@ -191,12 +217,34 @@ const PosterDashboard = ({ user }) => {
             </div>
           ))}
 
+          {activeTab === 'orders' && orders.map(o => (
+            <div key={o._id} className="card" style={{ marginBottom: '1rem', background: 'rgba(15, 23, 42, 0.4)', padding: '1.25rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem' }}>
+                <span style={{ fontWeight: 600, color: 'var(--primary)', fontSize: '1.05rem' }}>{o.productName}</span>
+                <span className="badge badge-success" style={{ fontSize: '0.75rem' }}>Qty: {o.quantity}</span>
+              </div>
+              <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                <p><strong>Tracking ID:</strong> <code style={{ color: 'var(--text-main)', background: 'rgba(255,255,255,0.05)', padding: '0.1rem 0.3rem', borderRadius: '4px' }}>{o._id}</code></p>
+                <p><strong>Contact Phone:</strong> {o.posterPhone}</p>
+                <p><strong>Fulfillment Location:</strong> {o.posterLocation}</p>
+                <p style={{ fontSize: '0.75rem', marginTop: '0.4rem', color: 'var(--text-muted)' }}>
+                  Placed on: {new Date(o.createdAt).toLocaleString()}
+                </p>
+              </div>
+            </div>
+          ))}
+
           {activeTab === 'posts' && posts.length === 0 && (
             <p style={{ color: 'var(--text-muted)', textAlign: 'center', marginTop: '2rem' }}>
               No posts available yet.
             </p>
           )}
 
+          {activeTab === 'orders' && orders.length === 0 && (
+            <p style={{ color: 'var(--text-muted)', textAlign: 'center', marginTop: '2rem' }}>
+              You have not placed any orders yet.
+            </p>
+          )}
         </div>
       </div>
     </div>

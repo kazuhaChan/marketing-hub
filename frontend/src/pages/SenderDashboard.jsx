@@ -1,13 +1,12 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Package, Send, ShoppingCart } from 'lucide-react';
+import { Package, Send } from 'lucide-react';
 import { API_URL } from '../config';
 
 const SenderDashboard = ({ user }) => {
   const [activeTab, setActiveTab] = useState('products');
   const [products, setProducts] = useState([]);
   const [posts, setPosts] = useState([]);
-  const [orders, setOrders] = useState([]);
 
   // Form states
   const [productName, setProductName] = useState('');
@@ -27,14 +26,12 @@ const SenderDashboard = ({ user }) => {
   const fetchData = async () => {
     try {
       const headers = { 'x-auth-token': token };
-      const [prodRes, postRes, orderRes] = await Promise.all([
+      const [prodRes, postRes] = await Promise.all([
         axios.get(`${API_URL}/api/products`, { headers }),
-        axios.get(`${API_URL}/api/posts`, { headers }),
-        axios.get(`${API_URL}/api/orders`, { headers })
+        axios.get(`${API_URL}/api/posts`, { headers })
       ]);
       setProducts(prodRes.data);
       setPosts(postRes.data);
-      setOrders(orderRes.data);
     } catch (err) {
       console.error(err);
     }
@@ -121,14 +118,13 @@ const SenderDashboard = ({ user }) => {
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           <button className={`btn ${activeTab === 'products' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setActiveTab('products')}><Package size={16}/> Products</button>
           <button className={`btn ${activeTab === 'posts' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setActiveTab('posts')}><Send size={16}/> Posts</button>
-          <button className={`btn ${activeTab === 'orders' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setActiveTab('orders')}><ShoppingCart size={16}/> Orders</button>
         </div>
       </div>
 
       <div className="dashboard-grid">
         <div className="card">
           <h2 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            {activeTab === 'orders' ? 'Order Insights' : (editingProductId ? 'Edit Product' : `Create New ${activeTab.slice(0, -1)}`)}
+            {editingProductId ? 'Edit Product' : `Create New ${activeTab.slice(0, -1)}`}
           </h2>
 
           {activeTab === 'products' && (
@@ -194,26 +190,6 @@ const SenderDashboard = ({ user }) => {
               <button type="submit" className="btn btn-primary">Create Post</button>
             </form>
           )}
-
-          {activeTab === 'orders' && (
-            <div>
-              <p style={{ color: 'var(--text-muted)', marginBottom: '1.5rem', fontSize: '0.95rem' }}>
-                Monitor performance, fulfillment, and customer inquiries from this panel. All orders are synchronized to your designated Google Sheet in real-time.
-              </p>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
-                <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)', padding: '1rem', borderRadius: '10px', textAlign: 'center' }}>
-                  <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginBottom: '0.2rem' }}>Total Orders</p>
-                  <p style={{ fontSize: '1.8rem', fontWeight: 700, color: 'var(--primary)' }}>{orders.length}</p>
-                </div>
-                <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)', padding: '1rem', borderRadius: '10px', textAlign: 'center' }}>
-                  <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginBottom: '0.2rem' }}>Items Ordered</p>
-                  <p style={{ fontSize: '1.8rem', fontWeight: 700, color: 'var(--success)' }}>
-                    {orders.reduce((sum, o) => sum + (o.quantity || 0), 0)}
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
 
         <div className="card" style={{ maxHeight: '600px', overflowY: 'auto' }}>
@@ -246,30 +222,6 @@ const SenderDashboard = ({ user }) => {
               {p.scheduledAt && <p style={{ fontSize: '0.8rem' }}>Scheduled: {new Date(p.scheduledAt).toLocaleString()}</p>}
             </div>
           ))}
-
-          {activeTab === 'orders' && orders.map(o => (
-            <div key={o._id} className="list-item" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '0.5rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
-                <span style={{ fontWeight: 600, color: 'var(--text-main)' }}>{o.productName}</span>
-                <span className="badge badge-success" style={{ fontSize: '0.75rem' }}>Qty: {o.quantity}</span>
-              </div>
-              <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', gap: '0.25rem', width: '100%' }}>
-                <p><strong>Poster Name:</strong> {o.posterName || 'Unknown Poster'}</p>
-                <p><strong>Poster Email:</strong> {o.posterEmail || 'N/A'}</p>
-                <p><strong>Contact Phone:</strong> {o.posterPhone || 'N/A'}</p>
-                <p><strong>Location:</strong> {o.posterLocation || 'N/A'}</p>
-                <p style={{ fontSize: '0.75rem', marginTop: '0.2rem', color: 'var(--text-muted)' }}>
-                  {new Date(o.createdAt).toLocaleString()}
-                </p>
-              </div>
-            </div>
-          ))}
-
-          {activeTab === 'orders' && orders.length === 0 && (
-            <p style={{ color: 'var(--text-muted)', textAlign: 'center', marginTop: '2rem' }}>
-              No orders received yet for your products.
-            </p>
-          )}
         </div>
       </div>
     </div>
