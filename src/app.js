@@ -5,6 +5,7 @@ const authRoutes = require('./routes/auth');
 const productRoutes = require('./routes/products');
 const postRoutes = require('./routes/posts');
 const socialRoutes = require('./routes/social');
+const orderRoutes = require('./routes/orders');
 const initCron = require('./cron');
 const path = require('path');
 require('dotenv').config();
@@ -23,6 +24,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/posts', postRoutes);
 app.use('/api/social', socialRoutes);
+app.use('/api/orders', orderRoutes);
 
 // Initialize Cron Jobs
 initCron();

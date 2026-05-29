@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Share2 } from 'lucide-react';
 import { API_URL } from '../config';
+import OrderModal from '../components/OrderModal';
 
 const ProductDetail = () => {
   const { id } = useParams();
@@ -10,6 +11,7 @@ const ProductDetail = () => {
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
@@ -52,14 +54,24 @@ const ProductDetail = () => {
           )}
         </div>
         
-        <div className="card">
+        <div className="card" style={{ display: 'flex', flexDirection: 'column' }}>
           <h1 style={{ fontSize: '2.5rem', fontWeight: 800, marginBottom: '1rem' }}>{product.name}</h1>
-          <span className={`badge ${product.isAvailable ? 'badge-success' : 'badge-pending'}`} style={{ display: 'inline-block', marginBottom: '1.5rem' }}>
+          <span className={`badge ${product.isAvailable ? 'badge-success' : 'badge-pending'}`} style={{ display: 'inline-block', marginBottom: '1.5rem', width: 'fit-content' }}>
             {product.isAvailable ? 'In Stock & Active' : 'Out of Stock'}
           </span>
           
           <h3 style={{ marginBottom: '0.5rem', color: 'var(--text-muted)' }}>Description</h3>
           <p style={{ lineHeight: 1.8, marginBottom: '2rem' }}>{product.description}</p>
+          
+          {product.isAvailable && (
+            <button 
+              className="btn btn-primary" 
+              style={{ marginBottom: '2rem', width: '100%', padding: '0.8rem 1.5rem', fontSize: '1.05rem', fontWeight: 600 }}
+              onClick={() => setIsModalOpen(true)}
+            >
+              Order This Product
+            </button>
+          )}
           
           {(user?.role === 'Poster' || user?.role === 'Admin') && product.isAvailable && (
             <div style={{ marginTop: 'auto', paddingTop: '2rem', borderTop: '1px solid var(--border)' }}>
@@ -74,6 +86,12 @@ const ProductDetail = () => {
           )}
         </div>
       </div>
+
+      <OrderModal 
+        product={product}
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+      />
     </div>
   );
 };

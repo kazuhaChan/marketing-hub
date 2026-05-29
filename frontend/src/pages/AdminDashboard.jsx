@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { UserPlus, Users, Trash2, ShieldAlert } from 'lucide-react';
+import { UserPlus, Users, Trash2, ShieldAlert, ShoppingCart } from 'lucide-react';
 import { API_URL } from '../config';
 
 const AdminDashboard = ({ user }) => {
   const [activeTab, setActiveTab] = useState('create');
   const [users, setUsers] = useState([]);
+  const [orders, setOrders] = useState([]);
   
   // Registration Form States
   const [regUsername, setRegUsername] = useState('');
@@ -28,8 +29,20 @@ const AdminDashboard = ({ user }) => {
     }
   };
 
+  const fetchOrders = async () => {
+    try {
+      const res = await axios.get(`${API_URL}/api/orders`, {
+        headers: { 'x-auth-token': token }
+      });
+      setOrders(res.data);
+    } catch (err) {
+      console.error('Error fetching orders', err);
+    }
+  };
+
   useEffect(() => {
     fetchUsers();
+    fetchOrders();
   }, []);
 
   const handleRegisterUser = async (e) => {
@@ -84,13 +97,14 @@ const AdminDashboard = ({ user }) => {
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           <button className={`btn ${activeTab === 'create' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setActiveTab('create')}><UserPlus size={16}/> Create Account</button>
           <button className={`btn ${activeTab === 'users' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setActiveTab('users')}><Users size={16}/> Manage Users</button>
+          <button className={`btn ${activeTab === 'orders' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setActiveTab('orders')}><ShoppingCart size={16}/> View Orders</button>
         </div>
       </div>
 
       <div className="dashboard-grid">
         <div className="card">
           <h2 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            {activeTab === 'create' ? 'Register New User' : 'Admin Controls'}
+            {activeTab === 'orders' ? 'Order Monitoring' : (activeTab === 'create' ? 'Register New User' : 'Admin Controls')}
           </h2>
 
           {activeTab === 'create' && (
@@ -131,6 +145,29 @@ const AdminDashboard = ({ user }) => {
               <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Select a user from the right side panel to manage or delete their account.</p>
             </div>
           )}
+
+          {activeTab === 'orders' && (
+            <div>
+              <p style={{ color: 'var(--text-muted)', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
+                As an Administrator, you can view and monitor all user checkouts across the entire system.
+              </p>
+              <div style={{ background: 'rgba(59, 130, 246, 0.1)', border: '1px solid rgba(59, 130, 246, 0.2)', padding: '1.25rem', borderRadius: '10px', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                <p style={{ fontSize: '0.95rem', fontWeight: 600 }}>System Summary</p>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.8rem' }}>
+                  <div style={{ background: 'rgba(255,255,255,0.03)', padding: '0.75rem', borderRadius: '6px', textAlign: 'center' }}>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>Total Orders</p>
+                    <p style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--primary)' }}>{orders.length}</p>
+                  </div>
+                  <div style={{ background: 'rgba(255,255,255,0.03)', padding: '0.75rem', borderRadius: '6px', textAlign: 'center' }}>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>Total Qty</p>
+                    <p style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--success)' }}>
+                      {orders.reduce((sum, o) => sum + (o.quantity || 0), 0)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="card">
@@ -149,27 +186,47 @@ const AdminDashboard = ({ user }) => {
             </div>
           )}
 
-          <h2 style={{ marginBottom: '1.5rem' }}>System Accounts ({users.length})</h2>
+          <h2 style={{ marginBottom: '1.5rem' }}>
+            {activeTab === 'orders' ? `Recorded Orders (${orders.length})` : `System Accounts (${users.length})`}
+          </h2>
           
           <div style={{ maxHeight: '450px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-            {users.map(u => (
-              <div key={u._id} className="list-item" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)', padding: '0.8rem 1rem' }}>
-                <div>
-                  <p style={{ fontWeight: 600, fontSize: '0.95rem' }}>{u.username}</p>
-                  <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{u.email}</p>
-                  <div style={{ marginTop: '0.4rem' }}>
-                    <span className={`badge ${u.role === 'Admin' ? 'badge-success' : (u.role === 'Poster' ? 'badge-pending' : 'badge-primary')}`} style={{ fontSize: '0.7rem' }}>
-                      {u.role}
-                    </span>
+            {activeTab === 'orders' ? (
+              orders.map(o => (
+                <div key={o._id} className="list-item" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)', padding: '1rem', flexDirection: 'column', alignItems: 'flex-start', gap: '0.5rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+                    <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>{o.productName}</span>
+                    <span className="badge badge-success" style={{ fontSize: '0.7rem' }}>Qty: {o.quantity}</span>
+                  </div>
+                  <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', gap: '0.2rem', width: '100%' }}>
+                    <p><strong>Customer:</strong> {o.customerName} ({o.customerNumber})</p>
+                    <p><strong>Placed By:</strong> {o.orderedBy?.username || 'Unknown'} ({o.orderedBy?.email || 'N/A'})</p>
+                    <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
+                      {new Date(o.createdAt).toLocaleString()}
+                    </p>
                   </div>
                 </div>
-                {u._id !== user.id && (
-                  <button onClick={() => handleDeleteUser(u._id, u.username)} className="btn btn-secondary" style={{ padding: '0.4rem', color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.2)' }} title="Delete Account">
-                    <Trash2 size={16} />
-                  </button>
-                )}
-              </div>
-            ))}
+              ))
+            ) : (
+              users.map(u => (
+                <div key={u._id} className="list-item" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)', padding: '0.8rem 1rem' }}>
+                  <div>
+                    <p style={{ fontWeight: 600, fontSize: '0.95rem' }}>{u.username}</p>
+                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{u.email}</p>
+                    <div style={{ marginTop: '0.4rem' }}>
+                      <span className={`badge ${u.role === 'Admin' ? 'badge-success' : (u.role === 'Poster' ? 'badge-pending' : 'badge-primary')}`} style={{ fontSize: '0.7rem' }}>
+                        {u.role}
+                      </span>
+                    </div>
+                  </div>
+                  {u._id !== user.id && (
+                    <button onClick={() => handleDeleteUser(u._id, u.username)} className="btn btn-secondary" style={{ padding: '0.4rem', color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.2)' }} title="Delete Account">
+                      <Trash2 size={16} />
+                    </button>
+                  )}
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>

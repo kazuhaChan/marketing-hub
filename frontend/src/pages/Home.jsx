@@ -2,10 +2,22 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { API_URL } from '../config';
+import OrderModal from '../components/OrderModal';
 
 const Home = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Order modal states
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const handleOpenOrder = (e, product) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setSelectedProduct(product);
+    setIsModalOpen(true);
+  };
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -48,10 +60,19 @@ const Home = () => {
                 <div className="product-info">
                   <h3 className="product-title">{product.name}</h3>
                   <p className="product-desc">{product.description.substring(0, 100)}...</p>
-                  <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto' }}>
                     <span className={`badge ${product.isAvailable ? 'badge-success' : 'badge-pending'}`}>
                       {product.isAvailable ? 'In Stock' : 'Out of Stock'}
                     </span>
+                    {product.isAvailable && (
+                      <button 
+                        className="btn btn-primary" 
+                        style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}
+                        onClick={(e) => handleOpenOrder(e, product)}
+                      >
+                        Order Now
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -59,6 +80,12 @@ const Home = () => {
           ))}
         </div>
       )}
+
+      <OrderModal 
+        product={selectedProduct}
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+      />
     </div>
   );
 };
