@@ -51,7 +51,10 @@ router.post('/register', auth, authorize(['Admin']), async (req, res) => {
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
-    const user = await User.findOne({ email });
+    if (!email || !password) {
+      return res.status(400).json({ msg: 'Please provide both email and password' });
+    }
+    const user = await User.findOne({ email: email.toLowerCase() });
     
     if (!user) return res.status(400).json({ msg: 'Invalid Credentials' });
 
