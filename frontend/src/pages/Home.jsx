@@ -19,7 +19,20 @@ const Home = () => {
     setIsModalOpen(true);
   };
 
+  const [isPoster, setIsPoster] = useState(false);
+
   useEffect(() => {
+    // Check if logged in user is a Poster
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      try {
+        const userObj = JSON.parse(storedUser);
+        setIsPoster(userObj && userObj.role === 'Poster');
+      } catch (e) {
+        console.error('Error parsing user state in Home.jsx', e);
+      }
+    }
+
     const fetchProducts = async () => {
       try {
         const token = localStorage.getItem('token');
@@ -64,7 +77,7 @@ const Home = () => {
                     <span className={`badge ${product.isAvailable ? 'badge-success' : 'badge-pending'}`}>
                       {product.isAvailable ? 'In Stock' : 'Out of Stock'}
                     </span>
-                    {product.isAvailable && (
+                    {isPoster && product.isAvailable && (
                       <button 
                         className="btn btn-primary" 
                         style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}

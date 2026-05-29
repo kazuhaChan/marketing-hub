@@ -4,8 +4,10 @@ import { X, ShoppingCart, Plus, Minus } from 'lucide-react';
 import { API_URL } from '../config';
 
 const OrderModal = ({ product, isOpen, onClose }) => {
-  const [customerName, setCustomerName] = useState('');
-  const [customerNumber, setCustomerNumber] = useState('');
+  const [posterName, setPosterName] = useState('');
+  const [posterEmail, setPosterEmail] = useState('');
+  const [posterPhone, setPosterPhone] = useState('');
+  const [posterLocation, setPosterLocation] = useState('');
   const [quantity, setQuantity] = useState(1);
   
   const [submitting, setSubmitting] = useState(false);
@@ -19,21 +21,24 @@ const OrderModal = ({ product, isOpen, onClose }) => {
       setSuccess(false);
       setError('');
       
-      // Attempt to pre-fill customer name if logged in
+      // Auto-prefill poster username and email from local storage
       const storedUser = localStorage.getItem('user');
       if (storedUser) {
         try {
           const userObj = JSON.parse(storedUser);
-          if (userObj && userObj.username) {
-            setCustomerName(userObj.username);
+          if (userObj) {
+            setPosterName(userObj.username || '');
+            setPosterEmail(userObj.email || '');
           }
         } catch (e) {
           console.error('Error reading user state', e);
         }
       } else {
-        setCustomerName('');
+        setPosterName('');
+        setPosterEmail('');
       }
-      setCustomerNumber('');
+      setPosterPhone('');
+      setPosterLocation('');
     }
   }, [isOpen]);
 
@@ -41,8 +46,8 @@ const OrderModal = ({ product, isOpen, onClose }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!customerName.trim() || !customerNumber.trim()) {
-      setError('Please fill in all fields.');
+    if (!posterPhone.trim() || !posterLocation.trim()) {
+      setError('Please fill in both Contact Number and Location.');
       return;
     }
 
@@ -55,8 +60,8 @@ const OrderModal = ({ product, isOpen, onClose }) => {
         `${API_URL}/api/orders`,
         {
           productId: product._id,
-          customerName,
-          customerNumber,
+          posterPhone,
+          posterLocation,
           quantity
         },
         {
@@ -91,7 +96,7 @@ const OrderModal = ({ product, isOpen, onClose }) => {
               </div>
             </div>
             <h2 style={{ fontSize: '1.75rem', fontWeight: 700, marginBottom: '0.5rem', color: '#10b981' }}>
-              Order Placed!
+              Order Tracked!
             </h2>
             <p style={{ color: 'var(--text-muted)' }}>
               Successfully recorded order for {product.name}
@@ -104,8 +109,8 @@ const OrderModal = ({ product, isOpen, onClose }) => {
                 <ShoppingCart size={22} />
               </div>
               <div>
-                <h2 style={{ fontSize: '1.5rem', fontWeight: 700 }}>Checkout Product</h2>
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Fill in the details below to record your order</p>
+                <h2 style={{ fontSize: '1.5rem', fontWeight: 700 }}>Track Product Order</h2>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Order tracking details for Poster checkout logs</p>
               </div>
             </div>
 
@@ -130,17 +135,27 @@ const OrderModal = ({ product, isOpen, onClose }) => {
             )}
 
             <form onSubmit={handleSubmit}>
-              <div className="form-group">
-                <label>Customer Name</label>
-                <input 
-                  type="text" 
-                  className="input" 
-                  required 
-                  value={customerName} 
-                  onChange={e => setCustomerName(e.target.value)} 
-                  placeholder="e.g. John Doe"
-                  disabled={submitting}
-                />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label>Poster Name</label>
+                  <input 
+                    type="text" 
+                    className="input" 
+                    value={posterName} 
+                    disabled 
+                    style={{ background: 'rgba(255, 255, 255, 0.02)', color: 'var(--text-muted)', cursor: 'not-allowed' }}
+                  />
+                </div>
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label>Poster Email</label>
+                  <input 
+                    type="email" 
+                    className="input" 
+                    value={posterEmail} 
+                    disabled 
+                    style={{ background: 'rgba(255, 255, 255, 0.02)', color: 'var(--text-muted)', cursor: 'not-allowed' }}
+                  />
+                </div>
               </div>
 
               <div className="form-group">
@@ -149,9 +164,22 @@ const OrderModal = ({ product, isOpen, onClose }) => {
                   type="tel" 
                   className="input" 
                   required 
-                  value={customerNumber} 
-                  onChange={e => setCustomerNumber(e.target.value)} 
+                  value={posterPhone} 
+                  onChange={e => setPosterPhone(e.target.value)} 
                   placeholder="e.g. 0912345678"
+                  disabled={submitting}
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Delivery / Fulfillment Location</label>
+                <input 
+                  type="text" 
+                  className="input" 
+                  required 
+                  value={posterLocation} 
+                  onChange={e => setPosterLocation(e.target.value)} 
+                  placeholder="e.g. Warehouse A, Block 3"
                   disabled={submitting}
                 />
               </div>

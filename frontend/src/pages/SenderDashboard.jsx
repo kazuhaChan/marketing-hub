@@ -254,9 +254,10 @@ const SenderDashboard = ({ user }) => {
                 <span className="badge badge-success" style={{ fontSize: '0.75rem' }}>Qty: {o.quantity}</span>
               </div>
               <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', gap: '0.25rem', width: '100%' }}>
-                <p><strong>Customer:</strong> {o.customerName}</p>
-                <p><strong>Contact:</strong> {o.customerNumber}</p>
-                <p><strong>Ordered By:</strong> {o.orderedBy?.username || 'Unknown'}</p>
+                <p><strong>Poster Name:</strong> {o.posterName || 'Unknown Poster'}</p>
+                <p><strong>Poster Email:</strong> {o.posterEmail || 'N/A'}</p>
+                <p><strong>Contact Phone:</strong> {o.posterPhone || 'N/A'}</p>
+                <p><strong>Location:</strong> {o.posterLocation || 'N/A'}</p>
                 <p style={{ fontSize: '0.75rem', marginTop: '0.2rem', color: 'var(--text-muted)' }}>
                   {new Date(o.createdAt).toLocaleString()}
                 </p>

@@ -7,14 +7,19 @@ const User = require('../models/User');
 const auth = require('../middleware/auth');
 
 // @route   POST /api/orders
-// @desc    Place a new order and sync to Google Sheets
+// @desc    Place a new order (Poster only) and sync to Google Sheets
 router.post('/', auth, async (req, res) => {
   try {
-    const { productId, customerName, customerNumber, quantity } = req.body;
+    // 1. Enforce Role Restriction - Only Posters can place orders
+    if (req.user.role !== 'Poster') {
+      return res.status(403).json({ msg: 'Authorization denied. Only Poster accounts can place orders.' });
+    }
 
-    // 1. Validation
-    if (!productId || !customerName || !customerNumber) {
-      return res.status(400).json({ msg: 'Please provide all required fields (productId, customerName, customerNumber)' });
+    const { productId, posterPhone, posterLocation, quantity } = req.body;
+
+    // 2. Validation
+    if (!productId || !posterPhone || !posterLocation) {
+      return res.status(400).json({ msg: 'Please provide all required fields (productId, posterPhone, posterLocation)' });
     }
 
     const orderQty = parseInt(quantity, 10) || 1;
@@ -22,7 +27,7 @@ router.post('/', auth, async (req, res) => {
       return res.status(400).json({ msg: 'Quantity must be a positive integer' });
     }
 
-    // 2. Fetch product and verify availability
+    // 3. Fetch product and verify availability
     const product = await Product.findById(productId);
     if (!product) {
       return res.status(404).json({ msg: 'Product not found' });
@@ -32,30 +37,35 @@ router.post('/', auth, async (req, res) => {
       return res.status(400).json({ msg: 'Product is currently out of stock/unavailable' });
     }
 
-    // 3. Fetch ordering user's details for logging
+    // 4. Fetch the ordering Poster's secure details from DB (name & email)
     const orderer = await User.findById(req.user.id);
-    const ordererName = orderer ? orderer.username : 'Unknown User';
+    if (!orderer) {
+      return res.status(404).json({ msg: 'User account not found' });
+    }
 
-    // 4. Create and save the order in MongoDB
+    // 5. Create and save the order in MongoDB with Poster details
     const newOrder = new Order({
       product: productId,
       productName: product.name,
-      customerName,
-      customerNumber,
+      posterName: orderer.username,
+      posterEmail: orderer.email,
+      posterPhone,
+      posterLocation,
       quantity: orderQty,
       orderedBy: req.user.id
     });
 
     await newOrder.save();
 
-    // 5. Asynchronously synchronize with Google Sheets if webhook URL is configured
+    // 6. Asynchronously synchronize with Google Sheets if webhook URL is configured
     if (process.env.GOOGLE_SHEETS_URL) {
       axios.post(process.env.GOOGLE_SHEETS_URL, {
         productName: product.name,
-        customerName: customerName,
-        customerNumber: customerNumber,
-        quantity: orderQty,
-        orderedBy: ordererName
+        posterName: orderer.username,
+        posterEmail: orderer.email,
+        posterPhone: posterPhone,
+        posterLocation: posterLocation,
+        quantity: orderQty
       }).catch(err => {
         // Log sheet sync errors without blocking the backend response to the user
         console.error('Google Sheets sync failed:', err.message);
@@ -64,7 +74,7 @@ router.post('/', auth, async (req, res) => {
       console.log('Google Sheets sync skipped (GOOGLE_SHEETS_URL is not set in .env)');
     }
 
-    // 6. Return successful response
+    // 7. Return successful response
     res.status(201).json(newOrder);
   } catch (err) {
     console.error(err.message);

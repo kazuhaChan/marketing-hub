@@ -63,7 +63,7 @@ const ProductDetail = () => {
           <h3 style={{ marginBottom: '0.5rem', color: 'var(--text-muted)' }}>Description</h3>
           <p style={{ lineHeight: 1.8, marginBottom: '2rem' }}>{product.description}</p>
           
-          {product.isAvailable && (
+          {user?.role === 'Poster' && product.isAvailable && (
             <button 
               className="btn btn-primary" 
               style={{ marginBottom: '2rem', width: '100%', padding: '0.8rem 1.5rem', fontSize: '1.05rem', fontWeight: 600 }}

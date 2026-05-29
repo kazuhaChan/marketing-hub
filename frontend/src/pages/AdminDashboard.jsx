@@ -199,8 +199,8 @@ const AdminDashboard = ({ user }) => {
                     <span className="badge badge-success" style={{ fontSize: '0.7rem' }}>Qty: {o.quantity}</span>
                   </div>
                   <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', gap: '0.2rem', width: '100%' }}>
-                    <p><strong>Customer:</strong> {o.customerName} ({o.customerNumber})</p>
-                    <p><strong>Placed By:</strong> {o.orderedBy?.username || 'Unknown'} ({o.orderedBy?.email || 'N/A'})</p>
+                    <p><strong>Poster:</strong> {o.posterName || 'Unknown'} ({o.posterEmail || 'N/A'})</p>
+                    <p><strong>Contact:</strong> {o.posterPhone || 'N/A'} | <strong>Location:</strong> {o.posterLocation || 'N/A'}</p>
                     <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
                       {new Date(o.createdAt).toLocaleString()}
                     </p>
