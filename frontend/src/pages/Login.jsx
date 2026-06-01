@@ -110,7 +110,7 @@ const Login = ({ setUser }) => {
   };
 
   return (
-    <div className="auth-container">
+    <div className="auth-container" style={{ flexDirection: 'column' }}>
       <div className="card auth-card" style={{ padding: '2.5rem' }}>
         
         {/* LOGIN MODE */}
