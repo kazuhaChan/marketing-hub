@@ -6,6 +6,8 @@ import Profile from './pages/Profile';
 import SenderDashboard from './pages/SenderDashboard';
 import PosterDashboard from './pages/PosterDashboard';
 import AdminDashboard from './pages/AdminDashboard';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import DeleteInstructions from './pages/DeleteInstructions';
 import Header from './components/Header';
 import { useState, useEffect } from 'react';
 
@@ -39,6 +41,8 @@ function App() {
     <Router>
       <Routes>
         <Route path="/login" element={<Login setUser={setUser} />} />
+        <Route path="/privacy" element={<PrivacyPolicy />} />
+        <Route path="/delete-instructions" element={<DeleteInstructions />} />
         
         {/* Protected Routes */}
         <Route path="/" element={user ? <Layout><Home /></Layout> : <Navigate to="/login" />} />

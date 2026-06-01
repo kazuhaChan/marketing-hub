@@ -1,0 +1,57 @@
+========================================================================
+             MẸO & CÂU TRẢ LỜI XÁC MINH ỨNG DỤNG META (FACEBOOK APP REVIEW)
+                              MARKETING HUB
+========================================================================
+
+------------------------------------------------------------------------
+CÂU HỎI 1: Lựa chọn nào sau đây mô tả đúng nhất về doanh nghiệp của bạn?
+------------------------------------------------------------------------
+- Lựa chọn: Agency (Đã chọn trên ảnh màn hình)
+
+------------------------------------------------------------------------
+CÂU HỎI 2: Doanh nghiệp bạn sẽ làm thế nào khi sử dụng Dữ liệu trên nền tảng 
+(tức là mọi thông tin hoặc dữ liệu bạn nhận được từ chúng tôi) để triển khai 
+một sản phẩm hoặc dịch vụ thay mặt khách hàng?
+------------------------------------------------------------------------
+
+*** BẢN TIẾNG VIỆT (Copy-paste trực tiếp): ***
+Doanh nghiệp chúng tôi là một đơn vị truyền thông (Agency) cung cấp dịch vụ quản lý chiến dịch quảng cáo, truyền thông mạng xã hội và hỗ trợ phân phối sản phẩm cho các đối tác bán lẻ và nhà cung cấp thương mại.
+
+Để triển khai dịch vụ này, chúng tôi sử dụng Dữ liệu trên nền tảng (gồm danh sách Trang Facebook và mã liên kết quyền đăng bài của nhân sự/cộng tác viên thuộc hệ thống của chúng tôi) nhằm tự động đăng tải các bài viết tiếp thị sản phẩm, hình ảnh sản phẩm và nội dung khuyến mại lên các Trang Facebook đại diện của đối tác hoặc trang bán hàng thuộc hệ thống phân phối của chúng tôi.
+
+Khách hàng (các nhà cung cấp, thương hiệu sản phẩm) sử dụng hệ thống của chúng tôi để cập nhật thông tin sản phẩm và nội dung bài đăng quảng cáo. Sau đó, hệ thống sẽ tự động điều phối, lên lịch và xuất bản bài viết lên các Trang Facebook liên kết để tiếp cận người tiêu dùng, giúp khách hàng tối ưu hóa quy trình bán hàng và tăng trưởng doanh số một cách hiệu quả và minh bạch.
+
+*** BẢN TIẾNG ANH (Dùng để đối chiếu nếu cần): ***
+Our company is a media and advertising agency providing campaign management, social media marketing, and product distribution services for retail partners and brands.
+
+To deliver this service, we use Platform Data (specifically page lists, page names, and secure publishing access tokens connected by our team/affiliates) to automatically publish promotional posts, product images, and marketing content onto the designated Facebook Pages.
+
+Our clients (suppliers and brand owners) use our portal to upload their product catalogs and prepare marketing content. Our system then schedules and automatically publishes these advertisements to the linked Facebook Pages to reach target audiences, helping clients streamline their sales workflow and scale their business efficiently.
+
+------------------------------------------------------------------------
+CÂU HỎI 3: Doanh nghiệp bạn có quản lý nhiều hồ sơ doanh nghiệp không?
+------------------------------------------------------------------------
+- Lựa chọn: No (Đã chọn trên ảnh màn hình)
+
+------------------------------------------------------------------------
+CÂU HỎI 4: Provide a link to your website.
+------------------------------------------------------------------------
+- Đường dẫn mặc định trong mã nguồn: http://mkt.kaiyovietnam.vn
+(Hoặc thay thế bằng đường dẫn website chính thức khi đã chạy thực tế)
+
+LƯU Ý CỰC KỲ QUAN TRỌNG VỀ WEBSITE:
+Website được cung cấp PHẢI hiển thị đầy đủ và rõ ràng các thông tin sau:
+1. Dịch vụ cung cấp: Giới thiệu rõ ràng về dịch vụ Marketing, quảng cáo mạng xã hội, hỗ trợ phân phối bán hàng như mô tả ở trên.
+2. Thông tin liên hệ: Tên doanh nghiệp, địa chỉ, email và số điện thoại rõ ràng ở chân trang (Footer) hoặc trang "Liên hệ".
+3. Chính sách bảo mật (Privacy Policy): Meta bắt buộc phải có link Chính sách bảo mật hiển thị rõ ràng cách ứng dụng xử lý dữ liệu người dùng.
+
+------------------------------------------------------------------------
+MẸO BỔ SUNG ĐỂ ĐƯỢC DUYỆT NHANH:
+------------------------------------------------------------------------
+1. Video quay màn hình (Screencast): Khi quay phim minh họa ứng dụng, hãy làm theo quy trình chuẩn:
+   - Đăng nhập vào Marketing Hub.
+   - Click "Liên kết tài khoản Facebook" (OAuth Login).
+   - Chọn trang Facebook Sandbox/Test.
+   - Tạo một sản phẩm / bài đăng mới.
+   - Nhấn nút "Đăng lên Facebook" và mở trang Facebook để chứng minh bài viết đã được đăng tải thành công (bao gồm ảnh sản phẩm & nội dung).
+2. Hãy chắc chắn rằng tài khoản Test Facebook Page có trạng thái Public và thuộc quyền sở hữu của tài khoản Developer đang gửi ứng dụng xét duyệt.
