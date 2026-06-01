@@ -28,12 +28,34 @@ function App() {
     setUser(null);
   };
 
+  const Footer = () => (
+    <footer style={{
+      textAlign: 'center',
+      padding: '1.5rem',
+      borderTop: '1px solid var(--border)',
+      background: 'rgba(15, 23, 42, 0.8)',
+      backdropFilter: 'blur(12px)',
+      color: 'var(--text-muted)',
+      fontSize: '0.85rem',
+      display: 'flex',
+      justifyContent: 'center',
+      gap: '1.5rem',
+      alignItems: 'center',
+      marginTop: 'auto'
+    }}>
+      <span>© 2026 MarketingHub. All rights reserved.</span>
+      <a href="/privacy" style={{ color: 'var(--text-muted)', textDecoration: 'none', transition: 'color 0.2s' }} onMouseEnter={(e) => e.target.style.color = 'var(--primary)'} onMouseLeave={(e) => e.target.style.color = 'var(--text-muted)'}>Chính sách bảo mật</a>
+      <a href="/delete-instructions" style={{ color: 'var(--text-muted)', textDecoration: 'none', transition: 'color 0.2s' }} onMouseEnter={(e) => e.target.style.color = 'var(--primary)'} onMouseLeave={(e) => e.target.style.color = 'var(--text-muted)'}>Hướng dẫn xóa dữ liệu</a>
+    </footer>
+  );
+
   const Layout = ({ children }) => (
     <div className="app-layout">
       <Header user={user} onLogout={handleLogout} />
       <main className="main-content">
         {children}
       </main>
+      <Footer />
     </div>
   );
 

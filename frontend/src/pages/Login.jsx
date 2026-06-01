@@ -302,6 +302,17 @@ const Login = ({ setUser }) => {
         )}
 
       </div>
+      <footer style={{
+        marginTop: '2rem',
+        display: 'flex',
+        gap: '1.5rem',
+        fontSize: '0.85rem',
+        color: 'var(--text-muted)'
+      }}>
+        <a href="/privacy" style={{ color: 'var(--text-muted)', textDecoration: 'none', transition: 'color 0.25s' }} onMouseEnter={(e) => e.target.style.color = 'var(--primary)'} onMouseLeave={(e) => e.target.style.color = 'var(--text-muted)'}>Chính sách bảo mật</a>
+        <span>•</span>
+        <a href="/delete-instructions" style={{ color: 'var(--text-muted)', textDecoration: 'none', transition: 'color 0.25s' }} onMouseEnter={(e) => e.target.style.color = 'var(--primary)'} onMouseLeave={(e) => e.target.style.color = 'var(--text-muted)'}>Hướng dẫn xóa dữ liệu</a>
+      </footer>
     </div>
   );
 };
