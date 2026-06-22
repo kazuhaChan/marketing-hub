@@ -115,13 +115,53 @@ router.post('/post/:postId', auth, authorize(['Poster', 'Admin']), async (req, r
     // Real Facebook Integration
     if (platform === 'Facebook') {
       const baseUrl = process.env.BASE_URL || 'http://mkt.kaiyovietnam.vn';
-      const hasImage = post.product?.imageUrl;
-      const imageUrl = `${baseUrl}${post.product?.imageUrl}`;
+      
+      let imagesToPublish = [];
+      if (post.imageUrls && post.imageUrls.length > 0) {
+        imagesToPublish = post.imageUrls;
+      } else if (post.product?.imageUrls && post.product.imageUrls.length > 0) {
+        imagesToPublish = post.product.imageUrls;
+      } else if (post.product?.imageUrl) {
+        imagesToPublish = [post.product.imageUrl];
+      }
       
       try {
         let fbRes;
-        if (hasImage) {
-          // Post as a PHOTO
+        if (imagesToPublish.length > 1) {
+          // Post multiple photos using attached_media
+          const photoIds = [];
+          for (const imgPath of imagesToPublish) {
+            const imageUrl = imgPath.startsWith('http') ? imgPath : `${baseUrl}${imgPath}`;
+            try {
+              const uploadRes = await axios.post(`https://graph.facebook.com/v20.0/${account.accountId}/photos`, {
+                url: imageUrl,
+                published: false,
+                access_token: account.accessToken
+              });
+              if (uploadRes.data && uploadRes.data.id) {
+                photoIds.push(uploadRes.data.id);
+              }
+            } catch (uploadErr) {
+              console.error('Error uploading photo to Facebook:', uploadErr.response?.data || uploadErr.message);
+            }
+          }
+
+          if (photoIds.length > 0) {
+            fbRes = await axios.post(`https://graph.facebook.com/v20.0/${account.accountId}/feed`, {
+              message: post.content,
+              attached_media: photoIds.map(id => ({ media_fbid: id })),
+              access_token: account.accessToken
+            });
+          } else {
+            // Fallback if uploading all photos failed
+            fbRes = await axios.post(`https://graph.facebook.com/v20.0/${account.accountId}/feed`, {
+              message: post.content,
+              access_token: account.accessToken
+            });
+          }
+        } else if (imagesToPublish.length === 1) {
+          // Post as a single PHOTO
+          const imageUrl = imagesToPublish[0].startsWith('http') ? imagesToPublish[0] : `${baseUrl}${imagesToPublish[0]}`;
           fbRes = await axios.post(`https://graph.facebook.com/v20.0/${account.accountId}/photos`, {
             caption: post.content,
             url: imageUrl,

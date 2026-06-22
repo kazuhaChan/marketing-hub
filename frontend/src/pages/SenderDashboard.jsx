@@ -11,12 +11,13 @@ const SenderDashboard = ({ user }) => {
   // Form states
   const [productName, setProductName] = useState('');
   const [productDesc, setProductDesc] = useState('');
-  const [productImage, setProductImage] = useState(null);
+  const [productImages, setProductImages] = useState([]);
 
   const [postContent, setPostContent] = useState('');
   const [postProductId, setPostProductId] = useState('');
   const [postScheduledAt, setPostScheduledAt] = useState('');
   const [postPlatforms, setPostPlatforms] = useState({ Facebook: true, Zalo: false, TikTok: false });
+  const [postImages, setPostImages] = useState([]);
 
   const [editingProductId, setEditingProductId] = useState(null);
   const [productIsAvailable, setProductIsAvailable] = useState(true);
@@ -47,7 +48,11 @@ const SenderDashboard = ({ user }) => {
     formData.append('name', productName);
     formData.append('description', productDesc);
     formData.append('isAvailable', productIsAvailable);
-    if (productImage) formData.append('image', productImage);
+    if (productImages && productImages.length > 0) {
+      for (let i = 0; i < productImages.length; i++) {
+        formData.append('images', productImages[i]);
+      }
+    }
 
     try {
       if (editingProductId) {
@@ -61,7 +66,7 @@ const SenderDashboard = ({ user }) => {
         });
         alert('Product created successfully!');
       }
-      setProductName(''); setProductDesc(''); setProductImage(null); 
+      setProductName(''); setProductDesc(''); setProductImages([]); 
       setEditingProductId(null); setProductIsAvailable(true);
       fetchData();
     } catch (err) {
@@ -94,17 +99,28 @@ const SenderDashboard = ({ user }) => {
     e.preventDefault();
     const selectedPlatforms = Object.keys(postPlatforms).filter(key => postPlatforms[key]);
     
+    const formData = new FormData();
+    formData.append('productId', postProductId);
+    formData.append('content', postContent);
+    formData.append('platforms', JSON.stringify(selectedPlatforms));
+    if (postScheduledAt) {
+      formData.append('scheduledAt', postScheduledAt);
+    }
+    if (postImages && postImages.length > 0) {
+      for (let i = 0; i < postImages.length; i++) {
+        formData.append('images', postImages[i]);
+      }
+    }
+
     try {
-      await axios.post(`${API_URL}/api/posts`, {
-        productId: postProductId,
-        content: postContent,
-        platforms: selectedPlatforms,
-        scheduledAt: postScheduledAt || null
-      }, {
-        headers: { 'x-auth-token': token }
+      await axios.post(`${API_URL}/api/posts`, formData, {
+        headers: { 
+          'x-auth-token': token, 
+          'Content-Type': 'multipart/form-data' 
+        }
       });
       alert('Post created in the shared pool!');
-      setPostContent(''); setPostScheduledAt('');
+      setPostContent(''); setPostScheduledAt(''); setPostImages([]);
       fetchData();
     } catch (err) {
       alert('Error creating post. Make sure Product is valid and owned by you.');
@@ -138,8 +154,20 @@ const SenderDashboard = ({ user }) => {
                 <textarea className="input" rows="4" required value={productDesc} onChange={e => setProductDesc(e.target.value)}></textarea>
               </div>
               <div className="form-group">
-                <label>Image (Leave empty to keep current)</label>
-                <input type="file" className="input" onChange={e => setProductImage(e.target.files[0])} />
+                <label>Images (Leave empty to keep current)</label>
+                <input type="file" className="input" multiple onChange={e => setProductImages(e.target.files)} />
+                {productImages && productImages.length > 0 && (
+                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.5rem' }}>
+                    {Array.from(productImages).map((file, idx) => (
+                      <img 
+                        key={idx} 
+                        src={URL.createObjectURL(file)} 
+                        alt="preview" 
+                        style={{ width: '50px', height: '50px', borderRadius: '4px', objectFit: 'cover' }} 
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
               <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <input type="checkbox" checked={productIsAvailable} onChange={e => setProductIsAvailable(e.target.checked)} id="isAvailable" />
@@ -184,6 +212,22 @@ const SenderDashboard = ({ user }) => {
                 </div>
               </div>
               <div className="form-group">
+                <label>Post Images (Optional)</label>
+                <input type="file" className="input" multiple onChange={e => setPostImages(e.target.files)} />
+                {postImages && postImages.length > 0 && (
+                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.5rem' }}>
+                    {Array.from(postImages).map((file, idx) => (
+                      <img 
+                        key={idx} 
+                        src={URL.createObjectURL(file)} 
+                        alt="preview" 
+                        style={{ width: '50px', height: '50px', borderRadius: '4px', objectFit: 'cover' }} 
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="form-group">
                 <label>Schedule At (Optional)</label>
                 <input type="datetime-local" className="input" value={postScheduledAt} onChange={e => setPostScheduledAt(e.target.value)} />
               </div>
@@ -204,6 +248,15 @@ const SenderDashboard = ({ user }) => {
                 </span>
               </div>
               <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.8rem' }}>ID: {p._id}</p>
+              {p.imageUrls && p.imageUrls.length > 0 ? (
+                <div style={{ display: 'flex', gap: '0.25rem', marginBottom: '0.8rem', flexWrap: 'wrap' }}>
+                  {p.imageUrls.map((url, idx) => (
+                    <img key={idx} src={`${API_URL}${url}`} alt="" style={{ width: '40px', height: '40px', borderRadius: '4px', objectFit: 'cover', border: '1px solid var(--border)' }} />
+                  ))}
+                </div>
+              ) : p.imageUrl ? (
+                <img src={`${API_URL}${p.imageUrl}`} alt="" style={{ width: '40px', height: '40px', borderRadius: '4px', objectFit: 'cover', marginBottom: '0.8rem', border: '1px solid var(--border)' }} />
+              ) : null}
               <div style={{ display: 'flex', gap: '0.5rem' }}>
                 <button onClick={() => handleEditClick(p)} className="btn btn-secondary" style={{ fontSize: '0.75rem', padding: '0.3rem 0.6rem' }}>Edit</button>
                 <button onClick={() => handleDeleteProduct(p._id)} className="btn btn-secondary" style={{ fontSize: '0.75rem', padding: '0.3rem 0.6rem', color: '#ff4d4f' }}>Delete</button>
@@ -219,6 +272,21 @@ const SenderDashboard = ({ user }) => {
               </div>
               <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>{p.content.substring(0, 50)}...</p>
               <p style={{ fontSize: '0.8rem', color: 'var(--primary)' }}>Platforms: {p.platforms.join(', ')}</p>
+              {p.imageUrls && p.imageUrls.length > 0 ? (
+                <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap', margin: '0.4rem 0' }}>
+                  {p.imageUrls.map((url, idx) => (
+                    <img key={idx} src={`${API_URL}${url}`} alt="" style={{ width: '35px', height: '35px', borderRadius: '4px', objectFit: 'cover', border: '1px solid var(--border)' }} />
+                  ))}
+                </div>
+              ) : p.product?.imageUrls && p.product.imageUrls.length > 0 ? (
+                <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap', margin: '0.4rem 0' }}>
+                  {p.product.imageUrls.map((url, idx) => (
+                    <img key={idx} src={`${API_URL}${url}`} alt="" style={{ width: '35px', height: '35px', borderRadius: '4px', objectFit: 'cover', border: '1px solid var(--border)' }} />
+                  ))}
+                </div>
+              ) : p.product?.imageUrl ? (
+                <img src={`${API_URL}${p.product.imageUrl}`} alt="" style={{ width: '35px', height: '35px', borderRadius: '4px', objectFit: 'cover', margin: '0.4rem 0', border: '1px solid var(--border)' }} />
+              ) : null}
               {p.scheduledAt && <p style={{ fontSize: '0.8rem' }}>Scheduled: {new Date(p.scheduledAt).toLocaleString()}</p>}
             </div>
           ))}

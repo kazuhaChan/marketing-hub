@@ -12,6 +12,7 @@ const ProductDetail = () => {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedImage, setSelectedImage] = useState('');
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
@@ -24,6 +25,11 @@ const ProductDetail = () => {
           headers: { 'x-auth-token': token }
         });
         setProduct(res.data);
+        if (res.data.imageUrls && res.data.imageUrls.length > 0) {
+          setSelectedImage(res.data.imageUrls[0]);
+        } else if (res.data.imageUrl) {
+          setSelectedImage(res.data.imageUrl);
+        }
       } catch (err) {
         console.error('Error fetching product', err);
       } finally {
@@ -45,10 +51,38 @@ const ProductDetail = () => {
 
       <div className="dashboard-grid">
         <div className="card">
-          {product.imageUrl ? (
-            <img src={`${API_URL}${product.imageUrl}`} alt={product.name} style={{ width: '100%', borderRadius: 'var(--radius)', marginBottom: '1rem' }} />
+          {selectedImage ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <img 
+                src={`${API_URL}${selectedImage}`} 
+                alt={product.name} 
+                style={{ width: '100%', maxHeight: '400px', objectFit: 'contain', borderRadius: 'var(--radius)', background: 'var(--bg-secondary)', padding: '0.5rem' }} 
+              />
+              {product.imageUrls && product.imageUrls.length > 1 && (
+                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', overflowX: 'auto', paddingBottom: '0.5rem' }}>
+                  {product.imageUrls.map((url, idx) => (
+                    <img 
+                      key={idx} 
+                      src={`${API_URL}${url}`} 
+                      alt="" 
+                      onClick={() => setSelectedImage(url)}
+                      style={{ 
+                        width: '60px', 
+                        height: '60px', 
+                        objectFit: 'cover', 
+                        borderRadius: '6px', 
+                        cursor: 'pointer',
+                        border: selectedImage === url ? '2px solid var(--primary)' : '1px solid var(--border)',
+                        opacity: selectedImage === url ? 1 : 0.7,
+                        transition: 'all 0.2s ease'
+                      }} 
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
           ) : (
-            <div style={{ width: '100%', height: '300px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1rem' }}>
+            <div style={{ width: '100%', height: '300px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <span style={{ color: 'var(--text-muted)' }}>No Image Available</span>
             </div>
           )}

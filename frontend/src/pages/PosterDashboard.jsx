@@ -186,6 +186,37 @@ const PosterDashboard = ({ user }) => {
               </div>
               <p style={{ fontSize: '0.95rem', marginBottom: '1rem' }}>{p.content}</p>
               
+              {/* Image previews */}
+              {p.imageUrls && p.imageUrls.length > 0 ? (
+                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+                  {p.imageUrls.map((url, idx) => (
+                    <img 
+                      key={idx} 
+                      src={`${API_URL}${url}`} 
+                      alt="" 
+                      style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '6px', border: '1px solid var(--border)' }} 
+                    />
+                  ))}
+                </div>
+              ) : p.product?.imageUrls && p.product.imageUrls.length > 0 ? (
+                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+                  {p.product.imageUrls.map((url, idx) => (
+                    <img 
+                      key={idx} 
+                      src={`${API_URL}${url}`} 
+                      alt="" 
+                      style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '6px', border: '1px solid var(--border)' }} 
+                    />
+                  ))}
+                </div>
+              ) : p.product?.imageUrl ? (
+                <img 
+                  src={`${API_URL}${p.product.imageUrl}`} 
+                  alt="" 
+                  style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '6px', marginBottom: '1rem', border: '1px solid var(--border)' }} 
+                />
+              ) : null}
+              
               <div style={{ borderTop: '1px solid var(--border)', paddingTop: '1rem' }}>
                 <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Target Platforms: {p.platforms.join(', ')}</p>
                 <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>

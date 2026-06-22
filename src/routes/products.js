@@ -1,59 +1,28 @@
 const express = require('express');
 const router = express.Router();
-const multer = require('multer');
-const path = require('path');
 const Product = require('../models/Product');
 const auth = require('../middleware/auth');
 const authorize = require('../middleware/authorize');
-const fs = require('fs');
-
-// Ensure uploads directory exists
-const uploadDir = path.join(__dirname, '..', '..', 'uploads');
-if (!fs.existsSync(uploadDir)){
-    fs.mkdirSync(uploadDir);
-}
-
-// Multer config for image upload
-const storage = multer.diskStorage({
-  destination: function(req, file, cb) {
-    cb(null, uploadDir);
-  },
-  filename: function(req, file, cb) {
-    cb(null, Date.now() + path.extname(file.originalname)); // Appending extension
-  }
-});
-
-const upload = multer({ 
-  storage: storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
-  fileFilter: (req, file, cb) => {
-    const filetypes = /jpeg|jpg|png|webp/;
-    const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
-    const mimetype = filetypes.test(file.mimetype);
-
-    if(mimetype && extname) {
-      return cb(null, true);
-    } else {
-      cb(new Error('Only images are allowed!'));
-    }
-  }
-});
+const upload = require('../middleware/upload');
 
 // @route   POST /api/products
 // @desc    Create a product (Sender and Admin)
-router.post('/', auth, authorize(['Sender', 'Admin']), upload.single('image'), async (req, res) => {
+router.post('/', auth, authorize(['Sender', 'Admin']), upload.array('images', 10), async (req, res) => {
   try {
     const { name, description } = req.body;
+    let imageUrls = [];
     let imageUrl = '';
     
-    if (req.file) {
-      imageUrl = `/uploads/${req.file.filename}`;
+    if (req.files && req.files.length > 0) {
+      imageUrls = req.files.map(file => `/uploads/${file.filename}`);
+      imageUrl = imageUrls[0];
     }
 
     const newProduct = new Product({
       name,
       description,
       imageUrl,
+      imageUrls,
       owner: req.user.id
     });
 
@@ -103,7 +72,7 @@ router.get('/:id', auth, async (req, res) => {
 
 // @route   PUT /api/products/:id
 // @desc    Update a product
-router.put('/:id', auth, authorize(['Sender', 'Admin']), upload.single('image'), async (req, res) => {
+router.put('/:id', auth, authorize(['Sender', 'Admin']), upload.array('images', 10), async (req, res) => {
   try {
     let product = await Product.findById(req.params.id);
     if (!product) return res.status(404).json({ msg: 'Product not found' });
@@ -119,9 +88,10 @@ router.put('/:id', auth, authorize(['Sender', 'Admin']), upload.single('image'),
     if (description) product.description = description;
     if (isAvailable !== undefined) product.isAvailable = isAvailable;
     
-    if (req.file) {
-      // Optional: Delete old image
-      product.imageUrl = `/uploads/${req.file.filename}`;
+    if (req.files && req.files.length > 0) {
+      const newImageUrls = req.files.map(file => `/uploads/${file.filename}`);
+      product.imageUrls = newImageUrls;
+      product.imageUrl = newImageUrls[0];
     }
 
     await product.save();
