@@ -10,6 +10,7 @@ import PrivacyPolicy from './pages/PrivacyPolicy';
 import DeleteInstructions from './pages/DeleteInstructions';
 import Header from './components/Header';
 import { useState, useEffect } from 'react';
+import axios from 'axios';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -20,6 +21,23 @@ function App() {
     if (storedUser) {
       setUser(JSON.parse(storedUser));
     }
+
+    // Set up global axios interceptor for 401 errors
+    const interceptor = axios.interceptors.response.use(
+      (response) => response,
+      (error) => {
+        if (error.response && error.response.status === 401) {
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          setUser(null);
+        }
+        return Promise.reject(error);
+      }
+    );
+
+    return () => {
+      axios.interceptors.response.eject(interceptor);
+    };
   }, []);
 
   const handleLogout = () => {
