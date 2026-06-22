@@ -14,7 +14,8 @@ router.post('/', auth, authorize(['Sender', 'Admin']), upload.array('images', 10
 
     // Check if user owns product or is Admin
     const product = await Product.findById(productId);
-    if (!product || (product.owner.toString() !== req.user.id && req.user.role !== 'Admin')) {
+    const productOwner = product ? (product.owner || product.ownerId) : null;
+    if (!product || (!productOwner || (productOwner.toString() !== req.user.id && req.user.role !== 'Admin'))) {
       return res.status(400).json({ msg: 'Invalid product or unauthorized' });
     }
 
@@ -33,7 +34,9 @@ router.post('/', auth, authorize(['Sender', 'Admin']), upload.array('images', 10
 
     const newPost = new Post({
       product: productId,
+      productId: productId,
       sender: req.user.id,
+      creatorId: req.user.id,
       content,
       imageUrls,
       platforms,
@@ -53,19 +56,30 @@ router.post('/', auth, authorize(['Sender', 'Admin']), upload.array('images', 10
 // @desc    Get all posts based on role
 router.get('/', auth, async (req, res) => {
   try {
+    let posts = [];
     if (req.user.role === 'Sender') {
-      const posts = await Post.find({ sender: req.user.id })
+      posts = await Post.find({ $or: [{ sender: req.user.id }, { creatorId: req.user.id }] })
         .populate('product', ['name', 'imageUrl', 'imageUrls'])
+        .populate('productId', ['name', 'imageUrl', 'imageUrls'])
         .sort({ createdAt: -1 });
-      return res.json(posts);
     } else {
       // Poster/Admin role: get all posts from the single pool
-      const posts = await Post.find({})
+      posts = await Post.find({})
         .populate('product', ['name', 'description', 'imageUrl', 'imageUrls'])
+        .populate('productId', ['name', 'description', 'imageUrl', 'imageUrls'])
         .populate('sender', ['username'])
+        .populate('creatorId', ['username'])
         .sort({ createdAt: -1 });
-      return res.json(posts);
     }
+
+    const normalizedPosts = posts.map(post => {
+      const p = post.toObject ? post.toObject() : post;
+      p.product = p.product || p.productId;
+      p.sender = p.sender || p.creatorId;
+      return p;
+    });
+
+    return res.json(normalizedPosts);
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server Error');

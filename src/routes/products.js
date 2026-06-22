@@ -42,7 +42,7 @@ router.get('/', auth, async (req, res) => {
     if (req.user.role === 'Admin') {
       products = await Product.find({}).sort({ createdAt: -1 });
     } else if (req.user.role === 'Sender') {
-      products = await Product.find({ owner: req.user.id }).sort({ createdAt: -1 });
+      products = await Product.find({ $or: [{ owner: req.user.id }, { ownerId: req.user.id }] }).sort({ createdAt: -1 });
     } else {
       // Poster role: see all available products in the single pool
       products = await Product.find({ isAvailable: true }).sort({ createdAt: -1 });
