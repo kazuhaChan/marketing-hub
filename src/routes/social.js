@@ -20,6 +20,26 @@ router.post('/link', auth, authorize(['Poster', 'Admin']), async (req, res) => {
       return res.status(400).json({ msg: 'Missing OAuth code or redirectUri' });
     }
 
+    // Check for developer sandbox simulation code
+    if (code === 'mock_sandbox_code') {
+      let account = await SocialAccount.findOne({ user: req.user.id, platform, accountId: '1093490013856577' });
+      if (account) {
+        account.accessToken = 'mock_access_token';
+        account.accountName = 'Kaiyo Vietnam Shop (Sandbox)';
+        await account.save();
+      } else {
+        account = new SocialAccount({
+          user: req.user.id,
+          platform,
+          accountId: '1093490013856577',
+          accountName: 'Kaiyo Vietnam Shop (Sandbox)',
+          accessToken: 'mock_access_token'
+        });
+        await account.save();
+      }
+      return res.json([account]);
+    }
+
     // 1. Exchange code for access token
     console.error('Exchanging code for token...');
     console.error('App ID:', process.env.FB_APP_ID);
@@ -78,6 +98,81 @@ router.post('/link', auth, authorize(['Poster', 'Admin']), async (req, res) => {
     res.status(500).json({ msg: `Facebook API Error: ${fbError}` });
   }
 });
+
+// @route   GET /api/social/page-feed/:accountId
+// @desc    Get Facebook Page feed and engagement metrics (pages_read_engagement)
+router.get('/page-feed/:accountId', auth, authorize(['Poster', 'Admin']), async (req, res) => {
+  try {
+    const account = await SocialAccount.findOne({ _id: req.params.accountId, user: req.user.id });
+    if (!account) {
+      return res.status(404).json({ msg: 'Linked account not found' });
+    }
+
+    if (account.platform !== 'Facebook') {
+      return res.status(400).json({ msg: 'Platform not supported' });
+    }
+
+    if (account.accessToken === 'mock_access_token') {
+      // Return high-fidelity English mock Facebook feed and engagement metrics
+      const mockPosts = [
+        {
+          id: 'post_mock_1',
+          message: 'Introducing our new Eco-Friendly Bamboo Kitchenware Collection! Crafted from 100% sustainable resources. Get 20% off today with code ECOTREAT at checkout! 🌿🌱 #GoGreen #SustainableLiving #KitchenEssentials',
+          createdAt: new Date(Date.now() - 3600000 * 2).toISOString(), // 2 hours ago
+          likesCount: 142,
+          commentsCount: 28,
+          sharesCount: 15
+        },
+        {
+          id: 'post_mock_2',
+          message: 'We are thrilled to announce our expansion into the European distribution channel. Partnering with top logistics services to bring premium goods right to your doorstep. Thank you for your support! ✈️📦',
+          createdAt: new Date(Date.now() - 3600000 * 24).toISOString(), // 1 day ago
+          likesCount: 98,
+          commentsCount: 14,
+          sharesCount: 5
+        },
+        {
+          id: 'post_mock_3',
+          message: 'FLASH SALE! For the next 3 hours only, enjoy free shipping on all orders over $50. Use code SHIPFREE on our website. Hurry up, stocks are limited! 🛒💥⏰ #FlashSale #DealsOfTheDay',
+          createdAt: new Date(Date.now() - 3600000 * 48).toISOString(), // 2 days ago
+          likesCount: 310,
+          commentsCount: 57,
+          sharesCount: 32
+        }
+      ];
+      return res.json(mockPosts);
+    }
+
+    // Call Facebook Graph API to read feed and engagement
+    const feedRes = await axios.get(`https://graph.facebook.com/v20.0/${account.accountId}/feed`, {
+      params: {
+        fields: 'id,message,story,created_time,likes.summary(true),comments.summary(true),shares',
+        access_token: account.accessToken
+      }
+    });
+
+    const posts = feedRes.data.data || [];
+    
+    // Format the engagement metrics
+    const formattedPosts = posts.map(post => {
+      return {
+        id: post.id,
+        message: post.message || post.story || '(No text content)',
+        createdAt: post.created_time,
+        likesCount: post.likes?.summary?.total_count || 0,
+        commentsCount: post.comments?.summary?.total_count || 0,
+        sharesCount: post.shares?.count || 0
+      };
+    });
+
+    res.json(formattedPosts);
+  } catch (err) {
+    const fbError = err.response?.data?.error?.message || err.message;
+    console.error('Fetch Page Feed Error:', err.response?.data || err.message);
+    res.status(500).json({ msg: `Facebook API Error: ${fbError}` });
+  }
+});
+
 
 // @route   GET /api/social/accounts
 // @desc    Get linked accounts for the current user

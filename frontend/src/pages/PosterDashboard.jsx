@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Link as LinkIcon, Share, MessageSquare, ShoppingCart } from 'lucide-react';
+import { Link as LinkIcon, Share, MessageSquare, ShoppingCart, BarChart2, X } from 'lucide-react';
 import { API_URL } from '../config';
 
 const PosterDashboard = ({ user }) => {
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState('posts');
   const [posts, setPosts] = useState([]);
@@ -14,8 +15,31 @@ const PosterDashboard = ({ user }) => {
   // Mock social link state
   const [platform, setPlatform] = useState('Facebook');
   const [selectedAccounts, setSelectedAccounts] = useState({}); // { postId_platform: accountId }
+  const [sandboxMode, setSandboxMode] = useState(true);
+
+  // Page Feed & Engagement state (pages_read_engagement)
+  const [selectedFeedAccount, setSelectedFeedAccount] = useState(null);
+  const [feedPosts, setFeedPosts] = useState([]);
+  const [loadingFeed, setLoadingFeed] = useState(false);
+  const [feedError, setFeedError] = useState('');
 
   const token = localStorage.getItem('token');
+
+  const fetchPageFeed = async (account) => {
+    setSelectedFeedAccount(account);
+    setLoadingFeed(true);
+    setFeedError('');
+    setFeedPosts([]);
+    try {
+      const headers = { 'x-auth-token': token };
+      const res = await axios.get(`${API_URL}/api/social/page-feed/${account._id}`, { headers });
+      setFeedPosts(res.data);
+    } catch (err) {
+      setFeedError(err.response?.data?.msg || 'Error fetching page feed and metrics');
+    } finally {
+      setLoadingFeed(false);
+    }
+  };
 
   const fetchData = async () => {
     try {
@@ -52,7 +76,7 @@ const PosterDashboard = ({ user }) => {
 
   const handleOAuthCallback = async (code) => {
     try {
-      const redirectUri = 'https://mkt.kaiyovietnam.vn/poster-dashboard';
+      const redirectUri = code === 'mock_sandbox_code' ? `${window.location.origin}/poster-dashboard` : 'https://mkt.kaiyovietnam.vn/poster-dashboard';
       await axios.post(`${API_URL}/api/social/link`, {
         platform: 'Facebook',
         code,
@@ -70,14 +94,18 @@ const PosterDashboard = ({ user }) => {
   const handleLinkAccount = (e) => {
     e.preventDefault();
     if (platform === 'Facebook') {
-      const appId = import.meta.env.VITE_FB_APP_ID;
-      if (!appId) {
-        alert('Facebook App ID is not configured. Please add VITE_FB_APP_ID to .env');
-        return;
+      if (sandboxMode) {
+        navigate('/mock-facebook-oauth');
+      } else {
+        const appId = import.meta.env.VITE_FB_APP_ID;
+        if (!appId) {
+          alert('Facebook App ID is not configured. Please add VITE_FB_APP_ID to .env');
+          return;
+        }
+        const redirectUri = 'https://mkt.kaiyovietnam.vn/poster-dashboard';
+        const oauthUrl = `https://www.facebook.com/v20.0/dialog/oauth?client_id=${appId}&redirect_uri=${redirectUri}&scope=pages_manage_posts,pages_read_engagement,pages_show_list&state=facebook`;
+        window.location.href = oauthUrl;
       }
-      const redirectUri = 'https://mkt.kaiyovietnam.vn/poster-dashboard';
-      const oauthUrl = `https://www.facebook.com/v20.0/dialog/oauth?client_id=${appId}&redirect_uri=${redirectUri}&scope=pages_manage_posts,pages_read_engagement,pages_show_list&state=facebook`;
-      window.location.href = oauthUrl;
     } else {
       alert(`${platform} linking is not yet implemented. Please use Facebook.`);
     }
@@ -211,7 +239,19 @@ const PosterDashboard = ({ user }) => {
                     <option value="TikTok" disabled>TikTok (Coming soon)</option>
                   </select>
                 </div>
-                <button type="submit" className="btn btn-primary" style={{ backgroundColor: '#1877f2', display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
+                <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '1rem', marginBottom: '1.25rem' }}>
+                  <input 
+                    type="checkbox" 
+                    id="sandboxMode" 
+                    checked={sandboxMode} 
+                    onChange={e => setSandboxMode(e.target.checked)} 
+                    style={{ width: 'auto', margin: 0, cursor: 'pointer' }}
+                  />
+                  <label htmlFor="sandboxMode" style={{ margin: 0, fontWeight: 500, cursor: 'pointer', fontSize: '0.85rem', color: 'var(--primary)' }}>
+                    Developer Sandbox Mode (OAuth Simulation)
+                  </label>
+                </div>
+                <button type="submit" className="btn btn-primary" style={{ backgroundColor: '#1877f2', display: 'flex', gap: '0.5rem', justifyContent: 'center', width: '100%' }}>
                   Connect Facebook
                 </button>
               </form>
@@ -244,12 +284,25 @@ const PosterDashboard = ({ user }) => {
             </h2>
             
             {activeTab === 'social' && linkedAccounts.map(acc => (
-               <div key={acc._id} className="list-item">
-                <div>
-                  <p style={{ fontWeight: 600 }}>{acc.accountName} <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>({acc.platform})</span></p>
-                  <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>ID: {acc.accountId}</p>
+               <div key={acc._id} className="list-item" style={{ flexDirection: 'column', alignItems: 'stretch', gap: '0.75rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <p style={{ fontWeight: 600, margin: 0 }}>{acc.accountName} <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>({acc.platform})</span></p>
+                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: '0.2rem 0 0 0' }}>ID: {acc.accountId}</p>
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                    {acc.platform === 'Facebook' && (
+                      <button 
+                        onClick={() => fetchPageFeed(acc)}
+                        className="btn btn-secondary" 
+                        style={{ fontSize: '0.75rem', padding: '0.3rem 0.6rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
+                      >
+                        <BarChart2 size={12} /> View Feed & Engagement
+                      </button>
+                    )}
+                    <span className="badge badge-success">Linked</span>
+                  </div>
                 </div>
-                <span className="badge badge-success">Linked</span>
               </div>
             ))}
 
@@ -278,6 +331,64 @@ const PosterDashboard = ({ user }) => {
           </div>
         </div>
       )}
+
+      {activeTab === 'social' && selectedFeedAccount && (
+         <div className="card" style={{ marginTop: '2rem', border: '1px solid var(--primary)', background: 'rgba(15, 23, 42, 0.6)' }}>
+           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid var(--border)', paddingBottom: '1rem' }}>
+             <div>
+               <h2 style={{ margin: 0, fontSize: '1.25rem', color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                 <BarChart2 size={20} /> Facebook Page Feed & Engagement Analytics
+               </h2>
+               <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                 Connected Page: <strong>{selectedFeedAccount.accountName}</strong> (ID: {selectedFeedAccount.accountId})
+               </p>
+             </div>
+             <button onClick={() => setSelectedFeedAccount(null)} className="btn btn-secondary" style={{ padding: '0.4rem', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+               <X size={16} />
+             </button>
+           </div>
+
+           <div style={{ background: 'rgba(56, 189, 248, 0.05)', border: '1px solid rgba(56, 189, 248, 0.2)', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem', fontSize: '0.85rem', lineHeight: '1.5' }}>
+             <p style={{ margin: 0 }}>
+               ℹ️ <strong>Use Case Demonstration:</strong> This panel uses the <code>pages_read_engagement</code> permission to fetch the Page's posts and retrieve real-time engagement analytics. Marketing Hub uses this data to track reach, likes, comments, and shares, allowing publishers to monitor performance and optimize content distribution.
+             </p>
+           </div>
+
+           {loadingFeed && <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '2rem' }}>Loading posts and engagement metrics...</p>}
+           
+           {feedError && <div style={{ color: 'var(--error)', background: 'rgba(239, 68, 68, 0.1)', padding: '1rem', borderRadius: '8px', border: '1px solid rgba(239, 68, 68, 0.2)', marginBottom: '1.5rem', fontSize: '0.9rem' }}>{feedError}</div>}
+
+           {!loadingFeed && !feedError && feedPosts.length === 0 && (
+             <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '2rem' }}>No posts found on this page's feed.</p>
+           )}
+
+           {!loadingFeed && !feedError && feedPosts.length > 0 && (
+             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+               {feedPosts.map(post => (
+                 <div key={post.id} className="card" style={{ background: 'rgba(15, 23, 42, 0.4)', border: '1px solid var(--border)', padding: '1.25rem' }}>
+                   <p style={{ fontSize: '0.95rem', margin: '0 0 1rem 0', whiteSpace: 'pre-wrap', lineHeight: '1.5' }}>{post.message}</p>
+                   
+                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border)', paddingTop: '0.75rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                     <span>Posted on: {new Date(post.createdAt).toLocaleString('en-US')}</span>
+                     
+                     <div style={{ display: 'flex', gap: '1rem' }}>
+                       <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', color: 'var(--primary)' }}>
+                         👍 <strong>{post.likesCount}</strong> Likes
+                       </span>
+                       <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', color: 'var(--success)' }}>
+                         💬 <strong>{post.commentsCount}</strong> Comments
+                       </span>
+                       <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', color: 'var(--text-main)' }}>
+                         🔗 <strong>{post.sharesCount}</strong> Shares
+                       </span>
+                     </div>
+                   </div>
+                 </div>
+               ))}
+             </div>
+           )}
+         </div>
+       )}
     </div>
   );
 };

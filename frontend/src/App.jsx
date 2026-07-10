@@ -9,6 +9,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import DeleteInstructions from './pages/DeleteInstructions';
 import Header from './components/Header';
+import MockFacebookOAuth from './pages/MockFacebookOAuth';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 
@@ -83,6 +84,7 @@ function App() {
         <Route path="/login" element={<Login setUser={setUser} />} />
         <Route path="/privacy" element={<PrivacyPolicy />} />
         <Route path="/delete-instructions" element={<DeleteInstructions />} />
+        <Route path="/mock-facebook-oauth" element={<MockFacebookOAuth />} />
         
         {/* Protected Routes */}
         <Route path="/" element={user ? <Layout><Home /></Layout> : <Navigate to="/login" />} />
